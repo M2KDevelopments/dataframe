@@ -1,6 +1,6 @@
 import swal from 'sweetalert';
 import { ActionIcon, Button, Menu } from '@mantine/core';
-import { FullscreenIcon, GroupIcon, HelpCircleIcon, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon, Share, Share2Icon, Undo2Icon } from 'lucide-react';
+import { GroupIcon, HelpCircleIcon, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon,  Share2Icon, Undo2Icon } from 'lucide-react';
 import { FaGithub } from 'react-icons/fa';
 import { BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
 import { SiDrizzle, SiPrisma } from 'react-icons/si';
@@ -122,7 +122,7 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
 
                 <Menu shadow="md" width={width}>
                     <Menu.Target>
-                        <Button variant='subtle' color='teal' size='xs'>File</Button>
+                        <Button variant='subtle' color='#b3f1df' size='xs'>File</Button>
                     </Menu.Target>
 
                     <Menu.Dropdown>
@@ -165,7 +165,7 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
 
                 <Menu shadow="md" width={width}>
                     <Menu.Target>
-                        <Button variant='subtle' color='teal' size='xs'>View</Button>
+                        <Button variant='subtle' color='#b3f1df' size='xs'>View</Button>
                     </Menu.Target>
 
                     <Menu.Dropdown>
@@ -176,7 +176,7 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
                         <Menu.Item onClick={() => onView('redo')} rightSection={<Redo2Icon size={16} />}>Redo</Menu.Item>
                         <Menu.Item onClick={() => onView('reset')} rightSection={<RecycleIcon size={16} />}>Reset</Menu.Item>
                         <Menu.Divider />
-                        <Menu.Item onClick={() => onView('teams')} rightSection={<GroupIcon size={16} />}>Teams</Menu.Item>
+                        {/* <Menu.Item onClick={() => onView('teams')} rightSection={<GroupIcon size={16} />}>Teams</Menu.Item> */}
                         <Menu.Item onClick={() => onView('logs')} rightSection={<LogsIcon size={16} />}>Logs</Menu.Item>
 
                     </Menu.Dropdown>
@@ -185,7 +185,7 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
 
                 <Menu shadow="md" width={width}>
                     <Menu.Target>
-                        <Button variant='subtle' color='teal' size='xs'>Help</Button>
+                        <Button variant='subtle' color='#b3f1df' size='xs'>Help</Button>
                     </Menu.Target>
 
                     <Menu.Dropdown>
