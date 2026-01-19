@@ -1,22 +1,14 @@
-import React from 'react'
-import { ActionIcon, Button, Combobox, useCombobox } from '@mantine/core';
 import swal from 'sweetalert';
-import { PanelRight } from 'lucide-react';
+import { ActionIcon, Button, Menu } from '@mantine/core';
+import { FullscreenIcon, GroupIcon, HelpCircleIcon, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon, Share, Share2Icon, Undo2Icon } from 'lucide-react';
+import { FaGithub } from 'react-icons/fa';
+import { BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
+import { SiDrizzle, SiPrisma } from 'react-icons/si';
 
-const width = 150;
+const width = 200;
 
 function NavBar({ projectName, setProjectName, openDrawer }) {
 
-    const comboboxFile = useCombobox({
-        onDropdownClose: () => comboboxFile.resetSelectedOption(),
-    });
-
-    const comboboxView = useCombobox({
-        onDropdownClose: () => comboboxView.resetSelectedOption(),
-    });
-    const comboboxHelp = useCombobox({
-        onDropdownClose: () => comboboxHelp.resetSelectedOption(),
-    });
 
     const onRename = async () => {
         const name = await swal({
@@ -49,35 +41,53 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
             case "saveas":
                 break;
 
-            case "import":
+            case "import-json":
+                break;
+
+            case "import-sql":
+                break;
+
+            case "import-drizzle":
+                break;
+
+            case "import-prisma":
                 break;
 
             case "share":
                 break;
 
-            case "export":
+            case "export-json":
                 break;
+
+            case "export-sql":
+                break;
+
+            case "export-prisma":
+                break;
+
+            case "export-drizzle":
+                break;
+
             default: break;
         }
-        comboboxFile.closeDropdown();
     }
 
     const onView = (value) => {
         switch (value) {
-            case "open":
+            case 'fullscreen':
                 break;
-
-            case "save":
+            case 'logs':
                 break;
-
-            case "saveas":
+            case 'undo':
                 break;
-
-            case "export":
+            case 'redo':
+                break;
+            case 'reset':
+                break;
+            case 'teams':
                 break;
             default: break;
         }
-        comboboxView.closeDropdown();
     }
 
 
@@ -96,12 +106,11 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
                 break;
             default: break;
         }
-        comboboxHelp.closeDropdown();
     }
 
 
     return (
-        <header className='w-full h-8 bg-cyan-900 shadow-2xl'>
+        <header className='w-full h-10 bg-cyan-900 shadow-2xl fixed top-0 left-0 z-10'>
             <nav className='flex gap-2 px-2 items-center'>
                 <ActionIcon variant="filled" radius="md" size="lg" color='#104e64' onClick={openDrawer}>
                     <PanelRight size={18} />
@@ -111,74 +120,85 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
 
                 <span className='text-white pointer-events-none text-xs font-thin'>|</span>
 
-                <Combobox
-                    store={comboboxFile}
-                    width={width}
-                    position="bottom-start"
-                    withArrow
+                <Menu shadow="md" width={width}>
+                    <Menu.Target>
+                        <Button variant='subtle' color='teal' size='xs'>File</Button>
+                    </Menu.Target>
 
-                    onOptionSubmit={(val) => onFile(val)}
-                >
-                    <Combobox.Target>
-                        <Button variant='subtle' color='teal' size='xs' onClick={() => comboboxFile.toggleDropdown()}>File</Button>
-                    </Combobox.Target>
+                    <Menu.Dropdown>
+                        <Menu.Label>{projectName}</Menu.Label>
+                        <Menu.Item onClick={() => onFile('open')}>Open</Menu.Item>
+                        <Menu.Item onClick={() => onFile('save')} rightSection={<SaveIcon size={16} />}>Save</Menu.Item>
+                        <Menu.Item onClick={() => onFile('saveas')} rightSection={<SaveAllIcon size={16} />}>Save As</Menu.Item>
 
-                    <Combobox.Dropdown>
-                        <Combobox.Options>
-                            <Combobox.Option value="open">Open</Combobox.Option>
-                            <Combobox.Option value="save">Save</Combobox.Option>
-                            <Combobox.Option value="saveas">Save As</Combobox.Option>
-                            <Combobox.Option value="import">Import</Combobox.Option>
-                            <Combobox.Option value="export">Export</Combobox.Option>
-                            <Combobox.Option value="share">Share</Combobox.Option>
-                        </Combobox.Options>
-                    </Combobox.Dropdown>
-                </Combobox>
+                        <Menu.Sub>
+                            <Menu.Sub.Target>
+                                <Menu.Sub.Item>Import</Menu.Sub.Item>
+                            </Menu.Sub.Target>
 
-                <Combobox
-                    store={comboboxView}
-                    width={width}
-                    position="bottom-start"
-                    withArrow
-                    onOptionSubmit={(val) => onView(val)}
-                >
-                    <Combobox.Target>
-                        <Button variant='subtle' color='teal' size='xs' onClick={() => comboboxView.toggleDropdown()}>View</Button>
-                    </Combobox.Target>
+                            <Menu.Sub.Dropdown>
+                                <Menu.Item onClick={() => onFile('import-json')} leftSection={<BsFiletypeJson size={16} />}>JSON (*.json)</Menu.Item>
+                                <Menu.Item onClick={() => onFile('import-sql')} leftSection={<BsFiletypeSql size={16} />}>SQL (*.sql)</Menu.Item>
+                                <Menu.Item onClick={() => onFile('import-prisma')} leftSection={<SiPrisma size={16} />}>Prisma Schema</Menu.Item>
+                                <Menu.Item onClick={() => onFile('import-drizzle')} leftSection={<SiDrizzle size={16} />}>Drizzle Schema</Menu.Item>
+                            </Menu.Sub.Dropdown>
+                        </Menu.Sub>
 
-                    <Combobox.Dropdown>
-                        <Combobox.Options>
-                            <Combobox.Option value="fullscreen">Fullscreen</Combobox.Option>
-                            <Combobox.Option value="logs">Logs</Combobox.Option>
-                            <Combobox.Option value="undo">Undo</Combobox.Option>
-                            <Combobox.Option value="redo">Redo</Combobox.Option>
-                            <Combobox.Option value="reset">Reset</Combobox.Option>
-                            <Combobox.Option value="teams">Teams</Combobox.Option>
-                        </Combobox.Options>
-                    </Combobox.Dropdown>
-                </Combobox>
+                        <Menu.Divider />
+                        <Menu.Sub>
+                            <Menu.Sub.Target>
+                                <Menu.Sub.Item>Export</Menu.Sub.Item>
+                            </Menu.Sub.Target>
+
+                            <Menu.Sub.Dropdown>
+                                <Menu.Item onClick={() => onFile('export-json')} leftSection={<BsFiletypeJson size={16} />}>JSON (*.json)</Menu.Item>
+                                <Menu.Item onClick={() => onFile('export-sql')} leftSection={<BsFiletypeSql size={16} />}>SQL (*.sql)</Menu.Item>
+                                <Menu.Item onClick={() => onFile('export-prisma')} leftSection={<SiPrisma size={16} />}>Prisma Schema</Menu.Item>
+                                <Menu.Item onClick={() => onFile('export-drizzle')} leftSection={<SiDrizzle size={16} />}>Drizzle Schema</Menu.Item>
+                            </Menu.Sub.Dropdown>
+                        </Menu.Sub>
+
+                        <Menu.Item onClick={() => onFile('share')} rightSection={<Share2Icon size={16} />}>Share</Menu.Item>
+                    </Menu.Dropdown>
+                </Menu>
 
 
-                <Combobox
-                    store={comboboxHelp}
-                    width={width}
-                    position="bottom-start"
-                    withArrow
-                    onOptionSubmit={(val) => onHelp(val)}
-                >
-                    <Combobox.Target>
-                        <Button variant='subtle' color='teal' size='xs' onClick={() => comboboxHelp.toggleDropdown()}>Help</Button>
-                    </Combobox.Target>
+                <Menu shadow="md" width={width}>
+                    <Menu.Target>
+                        <Button variant='subtle' color='teal' size='xs'>View</Button>
+                    </Menu.Target>
 
-                    <Combobox.Dropdown>
-                        <Combobox.Options>
-                            <Combobox.Option value="github">Github</Combobox.Option>
-                            <Combobox.Option value="tour">Tour Guide</Combobox.Option>
-                            <Combobox.Option value="terms">Terms</Combobox.Option>
-                            <Combobox.Option value="privacypolicy">Privacy Policy</Combobox.Option>
-                        </Combobox.Options>
-                    </Combobox.Dropdown>
-                </Combobox>
+                    <Menu.Dropdown>
+                        <Menu.Label>View</Menu.Label>
+                        <Menu.Item onClick={() => onView('fullscreen')} rightSection={<span className='font-thin'>F11</span>}>Fullscreen</Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item onClick={() => onView('undo')} rightSection={<Undo2Icon size={16} />}>Undo</Menu.Item>
+                        <Menu.Item onClick={() => onView('redo')} rightSection={<Redo2Icon size={16} />}>Redo</Menu.Item>
+                        <Menu.Item onClick={() => onView('reset')} rightSection={<RecycleIcon size={16} />}>Reset</Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item onClick={() => onView('teams')} rightSection={<GroupIcon size={16} />}>Teams</Menu.Item>
+                        <Menu.Item onClick={() => onView('logs')} rightSection={<LogsIcon size={16} />}>Logs</Menu.Item>
+
+                    </Menu.Dropdown>
+                </Menu>
+
+
+                <Menu shadow="md" width={width}>
+                    <Menu.Target>
+                        <Button variant='subtle' color='teal' size='xs'>Help</Button>
+                    </Menu.Target>
+
+                    <Menu.Dropdown>
+                        <Menu.Label>Help & Support</Menu.Label>
+                        <Menu.Item onClick={() => onHelp('tour')} rightSection={<HelpCircleIcon size={16} />}>Tour Guide</Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item onClick={() => onHelp('github')} rightSection={<FaGithub size={16} />}>Github</Menu.Item>
+                        <Menu.Item onClick={() => onHelp('terms')}>Terms</Menu.Item>
+                        <Menu.Item onClick={() => onHelp('privacypolicy')}>Privacy Policy</Menu.Item>
+
+                    </Menu.Dropdown>
+                </Menu>
+
             </nav>
         </header>
     )
