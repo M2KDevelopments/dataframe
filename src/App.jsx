@@ -1,19 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDown01, Clock, Edit2, EditIcon, KeyRound, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
+
+// Components
+import DataField from './components/DataField';
 import Footer from './components/Footer'
 import NavBar from './components/NavBar'
+import FIELD_TYPES from './assets/fieldtypes.json';
+
+// UI Library
 import swal from 'sweetalert';
 import { MdCheck, MdWarning } from 'react-icons/md';
+import { ArrowDown01, Clock, Edit2, EditIcon, KeyRound, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Modal, Switch } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+
+// Drawflow Node Connector
 import Drawflow from 'drawflow'
 import 'drawflow/dist/drawflow.min.css';
 import './drawflow.css';
-import DataField from './components/DataField';
-import FIELD_TYPES from './assets/fieldtypes.json';
+
 
 const DEFAULT_FIELD = {
   name: "",
@@ -21,7 +28,7 @@ const DEFAULT_FIELD = {
   unique: false,
   primarykey: false,
   autoincrement: false,
-  foriegnkey: "",
+  foreignkey: "",
   min: "",
   max: "",
 }
@@ -38,6 +45,8 @@ function App() {
   const [tablename, setTablename] = useState('')
   const [tablefield, setTableField] = useState(DEFAULT_FIELD)
   const [editField, setEditField] = useState(null);
+  const [foreignkeySelected, setForeignkeySelected] = useState("")
+  const [tableListOfForeignKeys, setForeignKeyOptions] = useState([])
 
   // Search filtered list
   const filteredTables = useMemo(() => tables
@@ -45,8 +54,8 @@ function App() {
     .filter((table) => !search.trim() || table.name.toLowerCase().includes(search.toLowerCase())),
     [tables, search])
 
-  // Get Foriegn Option when edting a field for a table
-  const foriegnKeyOptions = useMemo(() => !editField ? [] : [
+  // Get Foreign Option when edting a field for a table
+  const foreignKeyOptions = useMemo(() => !editField ? [] : [
     { label: "<NONE>", value: "" },
     ...tables
       .filter((t, i) => i != editField.tableindex && t.fields.some(f => f.primarykey && f.type == editField.type))
@@ -134,12 +143,45 @@ function App() {
     return notifications.show({ title: "Table Added", message: `${name} was added successfully`, color: "green", icon: <MdCheck /> })
   }, [drawflowEditor, getNodeHTML, tables])
 
+  const onPrimaryKey = useCallback((tableindex, field) => {
+    if (tables[tableindex].fields.some(f => f.primarykey)) return notifications.show({
+      title: "Primary Key Exist",
+      message: `${tables[tableindex].name} already has a primary key`,
+      color: "orange",
+      icon: <MdWarning />
+    });
+    setTableField({ ...field, primarykey: !field.primarykey })
+  }, [tables]);
+
+  const onForeignKeyField = useCallback((tableindex, field) => {
+    if (field.primarykey) return notifications.show({
+      title: "Field Issue",
+      message: "This field is already a primary key",
+      color: "orange",
+      icon: <MdWarning />
+    });
+
+    if (tables[tableindex].fields.some(f => f.foreignkey)) return notifications.show({
+      title: "Foreign Key Exist",
+      message: `${tables[tableindex].name} already has a foreign key`,
+      color: "orange",
+      icon: <MdWarning />
+    });
+
+    setForeignKeyOptions(
+      [
+        { label: "<NONE>", value: "" },
+        ...tables
+          .filter((t, i) => tableindex != i && t.fields.some(f => f.primarykey && f.type == field.type))
+          .map(t => ({ label: t.name, value: t.name }))
+      ]
+    )
+  }, [tables])
 
   const onTableTimestamp = useCallback(async (index) => {
     tables[index].timestamp = !tables[index].timestamp;
     setTables([...tables]);
   }, [tables]);
-
 
   const onRenameTable = useCallback(async (index) => {
     const table = tables[index];
@@ -183,7 +225,6 @@ function App() {
     tables[index].name = name;
     setTables([...tables]);
   }, [tables]);
-
 
   const onRemoveTable = useCallback(async (table) => {
     const result = await swal({
@@ -351,7 +392,7 @@ function App() {
       unique: editField.unique,
       primarykey: editField.primarykey,
       autoincrement: editField.autoincrement,
-      foriegnkey: editField.foriegnkey,
+      foreignkey: editField.foreignkey,
       min: editField.min,
       max: editField.max,
     }
@@ -447,12 +488,12 @@ function App() {
                           <div className="flex gap-2 items-center">
 
                             <Tooltip label="Primary Key">
-                              <ActionIcon onClick={() => setTableField({ ...tablefield, primarykey: !tablefield.primarykey })} disabled={tablefield.type == 'boolean'} variant={tablefield.primarykey ? 'filled' : 'outline'} size="sm" color='orange' radius="lg">
+                              <ActionIcon onClick={() => onPrimaryKey(table.index, tablefield)} disabled={tablefield.type == 'boolean'} variant={tablefield.primarykey ? 'filled' : 'outline'} size="sm" color='orange' radius="lg">
                                 <KeyRound size={12} />
                               </ActionIcon>
                             </Tooltip>
                             <Tooltip label="Foreign Key">
-                              <ActionIcon onClick={() => null} disabled={tablefield.type == 'boolean'} variant={tablefield.foriegnkey ? 'filled' : 'outline'} size="sm" color='indigo' radius="lg">
+                              <ActionIcon onClick={() => onForeignKeyField(table.index, tablefield)} disabled={tablefield.type == 'boolean'} variant={tablefield.foreignkey ? 'filled' : 'outline'} size="sm" color='indigo' radius="lg">
                                 <KeyRound size={12} />
                               </ActionIcon>
                             </Tooltip>
@@ -565,18 +606,34 @@ function App() {
               </div>
 
               <Select
-                placeholder="Foriegn Key to Table"
-                label="Foriegn Key"
+                placeholder="Foreign Key to Table"
+                label="Foreign Key"
                 description="Select the table to connect to"
-                value={editField.foriegnkey}
-                onChange={(key) => setEditField({ ...editField, foriegnkey: key })}
-                data={foriegnKeyOptions}
+                value={editField.foreignkey}
+                onChange={(key) => setEditField({ ...editField, foreignkey: key })}
+                data={foreignKeyOptions}
               />
               <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={onEditField}>Update Field</Button>
 
             </div>
           </Modal>
           : null}
+
+        <Modal opened={tableListOfForeignKeys.length > 0} onClose={() => setForeignKeyOptions([])} title="Edit Field">
+          <div className="flex flex-col gap-3">
+            <Select
+              placeholder="Foreign Key to Table"
+              label="Foreign Key"
+              description="Select the table to connect to"
+              value={foreignkeySelected}
+              onChange={(key) => setForeignkeySelected(key)}
+              data={tableListOfForeignKeys}
+            />
+            <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={() => { setTableField({ ...tablefield, foreignkey: foreignkeySelected }); setForeignKeyOptions([]) }}>Set Foreign Key</Button>
+          </div>
+        </Modal>
+
+
 
         <Footer />
 

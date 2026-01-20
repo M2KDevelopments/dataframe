@@ -35,7 +35,7 @@ function DataField({ table, field, fieldindex, onEditField, onRemoveField }) {
                         </ActionIcon>
                     </Tooltip>
                     <Tooltip label="Foreign Key">
-                        <ActionIcon onClick={() => null} disabled={!field.foriegnkey || field.type == 'boolean'} variant={'outline'} size="sm" color='indigo' radius="lg">
+                        <ActionIcon disabled={!field.foreignkey || field.type == 'boolean'} variant={'outline'} size="sm" color='indigo' radius="lg">
                             <KeyRound size={12} />
                         </ActionIcon>
                     </Tooltip>
