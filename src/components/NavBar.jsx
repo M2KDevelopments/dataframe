@@ -1,9 +1,11 @@
 import swal from 'sweetalert';
 import { ActionIcon, Button, Menu } from '@mantine/core';
-import { GroupIcon, HelpCircleIcon, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon,  Share2Icon, Undo2Icon } from 'lucide-react';
+import { GroupIcon, HelpCircleIcon, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon, Share2Icon, Undo2Icon } from 'lucide-react';
 import { FaGithub } from 'react-icons/fa';
 import { BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
 import { SiDrizzle, SiPrisma } from 'react-icons/si';
+import { notifications } from '@mantine/notifications';
+import { MdWarning } from 'react-icons/md';
 
 const width = 200;
 
@@ -14,6 +16,7 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
         const name = await swal({
             title: `Rename Project`,
             text: `Enter the name of the project`,
+            icon: "info",
             buttons: ['Cancel', 'Rename'],
             content: {
                 element: "input",
@@ -26,6 +29,14 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
         })
 
         if (!name) return;
+        if (!'qwertyuiopasdfghjklzxcvbnm_'.split("").some(char => char == name[0].toLowerCase())) {
+            return notifications.show({
+                title: "Invalid Table Name",
+                message: "Please enter a valid table name",
+                color: "orange",
+                icon: <MdWarning />
+            })
+        }
         window.localStorage.setItem('project', name || projectName);
         setProjectName(name || projectName)
     }
