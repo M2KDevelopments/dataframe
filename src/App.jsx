@@ -507,8 +507,8 @@ function App() {
                                 <ArrowDown01 size={12} />
                               </ActionIcon>
                             </Tooltip>
-                            <NumberInput radius="lg" size="xs" disabled={tablefield.type == 'boolean'} placeholder='Min' value={tablefield.min} onChange={v => setTableField({ ...tablefield, min: v })} />
-                            <NumberInput radius="lg" size="xs" disabled={tablefield.type == 'boolean'} placeholder='Max' value={tablefield.max} onChange={v => setTableField({ ...tablefield, max: v })} />
+                            <NumberInput allowDecimal={tablefield.type == 'float'} radius="lg" size="xs" disabled={tablefield.type == 'boolean'} placeholder='Min' value={tablefield.min} onChange={v => setTableField({ ...tablefield, min: v })} />
+                            <NumberInput allowDecimal={tablefield.type == 'float'} radius="lg" size="xs" disabled={tablefield.type == 'boolean'} placeholder='Max' value={tablefield.max} onChange={v => setTableField({ ...tablefield, max: v })} />
                           </div>
                         </div>
                       </div>
