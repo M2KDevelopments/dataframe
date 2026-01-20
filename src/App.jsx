@@ -1,25 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDown01, Clock, Edit2, GripVertical, KeyRound, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
+import { ArrowDown01, Clock, Edit2, Edit2Icon, EditIcon, GripVertical, KeyRound, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import Footer from './components/Footer'
 import NavBar from './components/NavBar'
 import swal from 'sweetalert';
 import { MdCheck, MdWarning } from 'react-icons/md';
-import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Checkbox, Chip } from '@mantine/core';
+import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Checkbox, Chip, Modal, Switch } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
-
 import Drawflow from 'drawflow'
 import 'drawflow/dist/drawflow.min.css';
 import './drawflow.css';
-
-const FIELD_TYPES = [
-  { label: "Text", value: "text" },
-  { label: "Number", value: "int" },
-  { label: "Decimal", value: "float" },
-  { label: "Yes/No", value: "boolean" }
-]
+import DataField from './components/DataField';
+import FIELD_TYPES from './assets/fieldtypes.json';
 
 const DEFAULT_FIELD = {
   name: "",
@@ -39,6 +33,7 @@ function App() {
   const [tables, setTables] = useState([]);//[{name:string, timestamp:false, fields:[ {name, type} ]}]
   const [tablename, setTablename] = useState('')
   const [tablefield, setTableField] = useState(DEFAULT_FIELD)
+  const [editField, setEditField] = useState(null);
 
 
   const [search, setSearch] = useState('');
@@ -59,6 +54,15 @@ function App() {
       setEditor(editor);
     }
   }, [])
+
+  const invalidName = useCallback((name) => {
+    if (name.includes(" ")) return true;
+    if (!name || !name.trim()) return false;
+    if (!'qwertyuiopasdfghjklzxcvbnm_'.split("").some(char => char == name[0].toLowerCase())) {
+      return true;
+    }
+    return false;
+  }, []);
 
 
   const getNodeHTML = useCallback((table) => `
@@ -115,7 +119,7 @@ function App() {
 
     //refocus on field
     const input = document.getElementById('tablefield');
-    if(input) input.focus();
+    if (input) input.focus();
 
     return notifications.show({ title: "Table Added", message: `${name} was added successfully`, color: "green", icon: <MdCheck /> })
   }, [editor, getNodeHTML, tables])
@@ -171,7 +175,7 @@ function App() {
   }, [tables]);
 
 
-  const onRemoveTable = async (table) => {
+  const onRemoveTable = useCallback(async (table) => {
     const result = await swal({
       title: `Remove ${table.name}`,
       text: `Are you sure you want remove Table '${table.name}'`,
@@ -182,7 +186,7 @@ function App() {
     if (!result) return;
 
     setTables(tables.filter(t => t.name != table.name));
-  }
+  }, [tables]);
 
   const onAddField = useCallback(async (tableIndex, field) => {
 
@@ -257,12 +261,16 @@ function App() {
     return notifications.show({ title: "Field Added", message: `${field.name} was added successfully`, color: "green", icon: <MdCheck /> })
   }, [tables])
 
+  const onEditField = useCallback(() => {
+    console.log(tables[editField.tableindex].fields[editField.index])
+    setEditField(null);
+  }, [tables, editField])
 
   const onRemoveField = useCallback(async (tableIndex, fieldIndex) => {
     const field = tables[tableIndex].fields[fieldIndex];
     const result = await swal({
-      title: `Remove ${field.name}`,
-      text: `Are you sure you want remove Table '${field.name}'`,
+      title: `Remove Field`,
+      text: `Are you sure you want remove '${field.name}' from Table '${tables[tableIndex].name}'`,
       icon: "warning",
       buttons: ['Cancel', 'Remove']
     })
@@ -284,7 +292,7 @@ function App() {
         <Drawer opened={opened} onClose={close} title={
           <div className='grid grid-cols-2'>
             {/* Adding Table */}
-            <Input id="tablefield" placeholder='Table Name' leftSection={<Table />} maxLength={100} value={tablename} onKeyDown={(e) => { if (e.key === 'Enter')  onAddTable(tablename)}} onChange={e => setTablename(e.target.value)} />
+            <Input error={invalidName(tablename)} id="tablefield" placeholder='Table Name' leftSection={<Table />} maxLength={100} value={tablename} onKeyDown={(e) => { if (e.key === 'Enter') onAddTable(tablename) }} onChange={e => setTablename(e.target.value)} />
             <Button variant='filled' color='#104e64' leftSection={<Plus />} onClick={() => onAddTable(tablename)}>Add Table</Button>
           </div>
         }>
@@ -331,16 +339,12 @@ function App() {
                     </Accordion.Control>
                     <Accordion.Panel>
                       <div className="flex gap-2 items-center">
-                        {/* <div className="cursor-grab active:cursor-grabbing"><GripVertical size={16} /></div> */}
                         <div className="flex flex-col gap-2 w-full">
                           <div className="flex gap-2  items-center">
-                            {/* <Checkbox /> */}
-                            <Input onKeyDown={(e) => { if (e.key === 'Enter') onAddField(table.index, tablefield) }} id={'fieldinput-' + table.index} placeholder='Field Name' value={tablefield.name} onChange={e => setTableField({ ...tablefield, name: e.target.value })} />
+                            <Input error={invalidName(tablefield.name)} onKeyDown={(e) => { if (e.key === 'Enter') onAddField(table.index, tablefield) }} id={'fieldinput-' + table.index} placeholder='Field Name' value={tablefield.name} onChange={e => setTableField({ ...tablefield, name: e.target.value })} />
                             <Select placeholder="Data Type" value={tablefield.type} onChange={(fieldtype) => setTableField({ ...tablefield, type: fieldtype })} data={FIELD_TYPES} />
                             <ActionIcon onClick={() => onAddField(table.index, tablefield)} variant='filled' color='#104e64'><Plus /></ActionIcon>
                           </div>
-
-
                           <div className="flex gap-2 items-center">
 
                             <Tooltip label="Primary Key">
@@ -376,49 +380,15 @@ function App() {
                       <div className="my-3"></div>
 
                       {table.fields.map((field, fieldindex) =>
-                        <div key={table.name + field.name} className="flex gap-2 items-center bg-gray-50 p-2 border-2 border-gray-200 rounded-2xl">
-                          <div className="cursor-grab active:cursor-grabbing"><GripVertical size={16} /></div>
-                          <div className="flex flex-col gap-2 w-full">
-                            <div className="flex gap-2  items-center">
-                              <Checkbox color="teal" />
-                              <Input style={{ width: "100%", fontWeight: "bold" }} radius="lg" size="xs" placeholder='Field Name' value={field.name} />
-                              <Tooltip label="Remove field">
-                                <ActionIcon onClick={() => onRemoveField(table.index, fieldindex)} size="xs" variant='outline' color='gray'>
-                                  <Trash2 size={12} />
-                                </ActionIcon>
-                              </Tooltip>
-                            </div>
-
-                            <div className="flex gap-2 items-center">
-
-                              <Chip size="xs" icon={null} checked={true} variant="outline" color="teal">{field.type}</Chip>
-                              <Tooltip label="Primary Key">
-                                <ActionIcon disabled={!field.primarykey || field.type == 'boolean'} variant={'outline'} size="sm" color='orange' radius="lg">
-                                  <KeyRound size={12} />
-                                </ActionIcon>
-                              </Tooltip>
-                              <Tooltip label="Foreign Key">
-                                <ActionIcon onClick={() => null} disabled={!field.foriegnkey || field.type == 'boolean'} variant={'outline'} size="sm" color='indigo' radius="lg">
-                                  <KeyRound size={12} />
-                                </ActionIcon>
-                              </Tooltip>
-                              <Tooltip label="Field should be unique">
-                                <ActionIcon disabled={!field.unique || field.type == 'boolean'} variant={'outline'} size="sm" color='grape' radius="lg">
-                                  <Sparkle size={12} />
-                                </ActionIcon>
-                              </Tooltip>
-                              <Tooltip label="Auto Increment">
-                                <ActionIcon disabled={!field.autoincrement || field.type == 'boolean'} variant={'outline'} size="sm" color='pink' radius="lg">
-                                  <ArrowDown01 size={12} />
-                                </ActionIcon>
-                              </Tooltip>
-                              <Chip size="xs" disabled={true} defaultChecked icon={null}>Min: {field.min || " ?"}</Chip>
-                              <Chip size="xs" disabled={true} defaultChecked icon={null}>Max: {field.max || " ?"}</Chip>
-                            </div>
-                          </div>
-                        </div>
+                        <DataField
+                          key={table.name + field.name}
+                          field={field}
+                          fieldindex={fieldindex}
+                          table={table}
+                          onEditField={() => setEditField({ ...field, index: fieldindex, tableindex: table.index })}
+                          onRemoveField={onRemoveField}
+                        />
                       )}
-
 
                     </Accordion.Panel>
                   </Accordion.Item>
@@ -449,6 +419,72 @@ function App() {
             </ActionIcon>
           </div>
         </main>
+
+
+        {/* Modals */}
+        {editField ?
+          <Modal opened={editField != null} onClose={() => setEditField(null)} title="Edit Field">
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                <Input.Wrapper label="Field Name">
+                  <Input error={invalidName(editField.name)} placeholder='Field Name' label='Field Name' value={editField.name} onChange={e => setEditField({ ...editField, name: e.target.value })} />
+                </Input.Wrapper>
+                <Select placeholder="Data Type" label="Data Type" value={editField.type} onChange={(fieldtype) => setEditField({ ...editField, type: fieldtype })} data={FIELD_TYPES} />
+              </div>
+
+              <div className="flex gap-2 my-2">
+                <NumberInput label="Min" disabled={editField.type == 'boolean'} placeholder='Min' value={editField.min} onChange={v => setEditField({ ...editField, min: v })} />
+                <NumberInput label="Max" disabled={editField.type == 'boolean'} placeholder='Max' value={editField.max} onChange={v => setEditField({ ...editField, max: v })} />
+              </div>
+
+
+              <div className="flex gap-4 my-2">
+                <Switch
+                  disabled={editField.type == 'boolean'}
+                  checked={editField.primarykey}
+                  onChange={(event) => setEditField({ ...editField, primarykey: event.currentTarget.checked })}
+                  color="orange"
+                  label="Primary Key"
+                  size="sm"
+                />
+                <Switch
+                  disabled={editField.type == 'boolean'}
+                  checked={editField.unique}
+                  onChange={(event) => setEditField({ ...editField, unique: event.currentTarget.checked })}
+                  color="grape"
+                  label="Unique"
+                  size="sm"
+                />
+                <Switch
+                  disabled={editField.type == 'boolean'}
+                  checked={editField.autoincrement}
+                  onChange={(event) => setEditField({ ...editField, autoincrement: event.currentTarget.checked })}
+                  color="pink"
+                  label="Auto Increment"
+                  size="sm"
+                />
+              </div>
+
+              <Select
+                placeholder="Foriegn Key to Table"
+                label="Foriegn Key"
+                description="Select the table to connect to"
+                value={editField.foriegnkey}
+                onChange={(key) => setEditField({ ...editField, foriegnkey: key })}
+                data={[
+                  { label: "<NONE>", value: "" },
+                  ...tables
+                    .filter((t, i) => i != editField.tableindex && t.fields.some(f => f.primarykey && f.type == editField.type))
+                    .map(t => ({ label: t.name, value: t.name }))
+                ]}
+              />
+
+
+              <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={onEditField}>Update Field</Button>
+
+            </div>
+          </Modal>
+          : null}
 
         <Footer />
 

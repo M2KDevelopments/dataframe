@@ -1,0 +1,18 @@
+[
+    {
+        "label": "Text",
+        "value": "text"
+    },
+    {
+        "label": "Number",
+        "value": "int"
+    },
+    {
+        "label": "Decimal",
+        "value": "float"
+    },
+    {
+        "label": "Yes/No",
+        "value": "boolean"
+    }
+]
