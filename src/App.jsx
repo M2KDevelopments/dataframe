@@ -573,8 +573,8 @@ function App() {
               </div>
 
               <div className="flex gap-2 my-2">
-                <NumberInput label="Min" disabled={editField.type == 'boolean'} placeholder='Min' value={editField.min} onChange={v => setEditField({ ...editField, min: v })} />
-                <NumberInput label="Max" disabled={editField.type == 'boolean'} placeholder='Max' value={editField.max} onChange={v => setEditField({ ...editField, max: v })} />
+                <NumberInput allowDecimal={editField.type == 'float'} label="Min" disabled={editField.type == 'boolean'} placeholder='Min' value={editField.min} onChange={v => setEditField({ ...editField, min: v })} />
+                <NumberInput allowDecimal={editField.type == 'float'} label="Max" disabled={editField.type == 'boolean'} placeholder='Max' value={editField.max} onChange={v => setEditField({ ...editField, max: v })} />
               </div>
 
 
