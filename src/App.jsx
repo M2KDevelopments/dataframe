@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDown01, Clock, Edit2, Edit2Icon, EditIcon, GripVertical, KeyRound, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
+import { ArrowDown01, Clock, Edit2, EditIcon, KeyRound, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import Footer from './components/Footer'
 import NavBar from './components/NavBar'
 import swal from 'sweetalert';
 import { MdCheck, MdWarning } from 'react-icons/md';
-import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Checkbox, Chip, Modal, Switch } from '@mantine/core';
+import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Modal, Switch } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
@@ -30,19 +30,29 @@ function App() {
 
   const [projectName, setProjectName] = useState(window.localStorage.getItem('project') || "New Project")
   const [opened, { open, close }] = useDisclosure(false);
+  const [search, setSearch] = useState('');
+  const [drawflowEditor, setDrawFlowEditor] = useState(null);
+
+  // Tables and Fields
   const [tables, setTables] = useState([]);//[{name:string, timestamp:false, fields:[ {name, type} ]}]
   const [tablename, setTablename] = useState('')
   const [tablefield, setTableField] = useState(DEFAULT_FIELD)
   const [editField, setEditField] = useState(null);
 
-
-  const [search, setSearch] = useState('');
+  // Search filtered list
   const filteredTables = useMemo(() => tables
     .map((t, idx) => ({ ...t, index: idx }))
     .filter((table) => !search.trim() || table.name.toLowerCase().includes(search.toLowerCase())),
     [tables, search])
 
-  const [editor, setEditor] = useState(null);
+  // Get Foriegn Option when edting a field for a table
+  const foriegnKeyOptions = useMemo(() => !editField ? [] : [
+    { label: "<NONE>", value: "" },
+    ...tables
+      .filter((t, i) => i != editField.tableindex && t.fields.some(f => f.primarykey && f.type == editField.type))
+      .map(t => ({ label: t.name, value: t.name }))
+  ], [editField, tables]);
+
 
   useEffect(() => {
     // Load Drawflow
@@ -51,7 +61,7 @@ function App() {
       const editor = new Drawflow(id);
       editor.reroute = true;
       editor.start();
-      setEditor(editor);
+      setDrawFlowEditor(editor);
     }
   }, [])
 
@@ -113,7 +123,7 @@ function App() {
     const posy = 90;
     const className = '';
     const html = getNodeHTML(table);
-    editor.addNode(name, inputs, outputs, posx, posy, className, table, html);
+    drawflowEditor.addNode(name, inputs, outputs, posx, posy, className, table, html);
     setTables(prev => [...prev, table].sort((a, b) => a.name.localeCompare(b.name)));
     setTablename('');
 
@@ -122,7 +132,7 @@ function App() {
     if (input) input.focus();
 
     return notifications.show({ title: "Table Added", message: `${name} was added successfully`, color: "green", icon: <MdCheck /> })
-  }, [editor, getNodeHTML, tables])
+  }, [drawflowEditor, getNodeHTML, tables])
 
 
   const onTableTimestamp = useCallback(async (index) => {
@@ -189,6 +199,8 @@ function App() {
   }, [tables]);
 
   const onAddField = useCallback(async (tableIndex, field) => {
+
+    if (!field.name) return;
 
     // validate name
     if (!'qwertyuiopasdfghjklzxcvbnm_'.split("").some(char => char == field.name[0].toLowerCase())) {
@@ -258,12 +270,99 @@ function App() {
     const input = document.getElementById('fieldinput-' + tableIndex);
     if (input) input.focus();
 
-    return notifications.show({ title: "Field Added", message: `${field.name} was added successfully`, color: "green", icon: <MdCheck /> })
+    notifications.show({
+      title: "Field Added",
+      message: `${field.name} was added successfully`,
+      color: "green",
+      icon: <MdCheck />
+    })
   }, [tables])
 
   const onEditField = useCallback(() => {
-    console.log(tables[editField.tableindex].fields[editField.index])
+    const tableIndex = editField.tableindex;
+    const field = tables[editField.tableindex].fields[editField.index];
+
+
+    if (!field.name) return;
+
+    // validate name
+    if (!'qwertyuiopasdfghjklzxcvbnm_'.split("").some(char => char == field.name[0].toLowerCase())) {
+      return notifications.show({
+        title: "Invalid Field Name",
+        message: "Please enter a valid field name",
+        color: "orange",
+        icon: <MdWarning />
+      })
+    }
+
+    if (field.name.includes(" ")) {
+      return notifications.show({
+        title: "Invalid Field Name",
+        message: "No whitesplaces in field name",
+        color: "orange",
+        icon: <MdWarning />
+      })
+    }
+
+    // check if it already exists
+    if (tables[tableIndex].fields.some((f, i) => f.name == field.name && i != editField.index)) {
+      return notifications.show({
+        title: "Field already exists",
+        message: `${field.name} already exists in the ${tables[tableIndex].name} Table`,
+        color: "orange",
+        icon: <MdWarning />
+      });
+    }
+
+    // Check min and max are avlue
+    if (field.min != '' && field.max != '') {
+      if (isNaN(field.min)) {
+        return notifications.show({
+          title: "Invalid min value",
+          message: `${field.name}'s max value should be a number`,
+          color: "orange",
+          icon: <MdWarning />
+        });
+      }
+
+      if (isNaN(field.max)) {
+        return notifications.show({
+          title: "Invalid max value",
+          message: `${field.name}'s max value should be a number`,
+          color: "orange",
+          icon: <MdWarning />
+        });
+      }
+      const max = parseFloat(field.max);
+      const min = parseFloat(field.min)
+      if (max <= min) {
+        return notifications.show({
+          title: "Invalid max and min values",
+          message: `${field.name}'s max value should be greater than the min value`,
+          color: "orange",
+          icon: <MdWarning />
+        });
+      }
+    }
+
+    tables[editField.tableindex].fields[editField.index] = {
+      name: editField.name,
+      type: editField.type,
+      unique: editField.unique,
+      primarykey: editField.primarykey,
+      autoincrement: editField.autoincrement,
+      foriegnkey: editField.foriegnkey,
+      min: editField.min,
+      max: editField.max,
+    }
+    setTables([...tables])
     setEditField(null);
+    notifications.show({
+      title: "Field Updated",
+      message: `${editField.name} was updated successfully`,
+      color: "green",
+      icon: <MdCheck />
+    })
   }, [tables, editField])
 
   const onRemoveField = useCallback(async (tableIndex, fieldIndex) => {
@@ -402,19 +501,19 @@ function App() {
         <main className='w-screen h-screen fixed top-0 left-0'>
           <div id="drawflow" className='w-full h-full'></div>
           <div className='flex gap-2 justify-end relative -top-16 px-4'>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => editor?.zoom_in()}>
+            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_in()}>
               <ZoomInIcon />
             </ActionIcon>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => editor?.zoom_out()}>
+            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_out()}>
               <ZoomOutIcon />
             </ActionIcon>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => editor?.zoom_reset()}>
+            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_reset()}>
               <RefreshCw />
             </ActionIcon>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => editor?.zoom_max()}>
+            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_max()}>
               <Maximize2Icon />
             </ActionIcon>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => editor?.zoom_min()}>
+            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_min()}>
               <Minimize2Icon />
             </ActionIcon>
           </div>
@@ -471,15 +570,8 @@ function App() {
                 description="Select the table to connect to"
                 value={editField.foriegnkey}
                 onChange={(key) => setEditField({ ...editField, foriegnkey: key })}
-                data={[
-                  { label: "<NONE>", value: "" },
-                  ...tables
-                    .filter((t, i) => i != editField.tableindex && t.fields.some(f => f.primarykey && f.type == editField.type))
-                    .map(t => ({ label: t.name, value: t.name }))
-                ]}
+                data={foriegnKeyOptions}
               />
-
-
               <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={onEditField}>Update Field</Button>
 
             </div>
