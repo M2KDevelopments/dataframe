@@ -16,6 +16,12 @@ import { notifications, Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 
+// Drag and Drop Dnd Kit
+import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { SortableContext } from '@dnd-kit/sortable';
+import { verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { PointerSensor, KeyboardSensor, useSensor, useSensors, rectIntersection } from '@dnd-kit/core';
+
 // Drawflow Node Connector
 import Drawflow from 'drawflow'
 import 'drawflow/dist/drawflow.min.css';
@@ -33,12 +39,22 @@ const DEFAULT_FIELD = {
   max: "",
 }
 
+
+
+
 function App() {
 
   const [projectName, setProjectName] = useState(window.localStorage.getItem('project') || "New Project")
   const [opened, { open, close }] = useDisclosure(false);
   const [search, setSearch] = useState('');
   const [drawflowEditor, setDrawFlowEditor] = useState(null);
+
+  // Drag and Drop Dnd Kit
+  const [dragId, setDragId] = useState(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
 
   // Tables and Fields
   const [tables, setTables] = useState([]);//[{name:string, timestamp:false, fields:[ {name, type} ]}]
@@ -47,7 +63,6 @@ function App() {
   const [editField, setEditField] = useState(null);
   const [foreignkeySelected, setForeignkeySelected] = useState("")
   const [tableListOfForeignKeys, setForeignKeyOptions] = useState([])
-
   const [selectedFieldsSet, setSelectedFieldsSet] = useState(new Set());
 
   // Search filtered list
@@ -75,6 +90,21 @@ function App() {
       setDrawFlowEditor(editor);
     }
   }, [])
+
+  const handleDragStart = (event) => setDragId(event.active.id);
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    setDragId(null);
+    if (!over || active.id === over.id) return;
+    const oldIndex = parseInt(active.id.split("-")[1])
+    const newIndex = parseInt(over.id.split("-")[1])
+    if (oldIndex === -1 || newIndex === -1) return;
+    const tableIndex = parseInt(active.id.split("-")[0])
+    const [moved] = tables[tableIndex].fields.splice(oldIndex, 1);
+    tables[tableIndex].fields.splice(newIndex, 0, moved);
+    setTables([...tables]);
+  };
 
   const invalidName = useCallback((name) => {
     if (name.includes(" ")) return true;
@@ -705,13 +735,13 @@ function App() {
                         </Tooltip>
 
                         <Tooltip label={`Rename Table`}>
-                          <ActionIcon onClick={() => onRenameTable(table.index)} variant="outline" radius="sm" color="dark">
+                          <ActionIcon onClick={() => onRenameTable(table.index)} variant="outline" color="dark" radius="lg">
                             <Edit2 size={16} />
                           </ActionIcon>
                         </Tooltip>
 
                         <Tooltip label={`Remove ${table.name}`}>
-                          <ActionIcon onClick={() => onRemoveTable(table)} variant="outline" radius="sm" color="dark">
+                          <ActionIcon onClick={() => onRemoveTable(table)} variant="outline" color="dark" radius="lg">
                             <Trash2 size={16} />
                           </ActionIcon>
                         </Tooltip>
@@ -721,7 +751,7 @@ function App() {
                     }>
                       <Group>
                         <Table color="teal" size={16} />
-                        {table.name}
+                        {table.name} ({table.fields.length.toString()})
                       </Group>
                     </Accordion.Control>
                     <Accordion.Panel>
@@ -767,20 +797,47 @@ function App() {
                       <div className="my-3"></div>
 
 
-
-                      {table.fields.map((field, fieldindex) =>
-                        <DataField
-                          key={table.name + field.name}
-                          field={field}
-                          fieldindex={fieldindex}
-                          table={table}
-                          selectedFieldsSet={selectedFieldsSet}
-                          onSelectedField={onSelectedField}
-                          onEditField={() => setEditField({ ...field, index: fieldindex, tableindex: table.index })}
-                          onRemoveField={onRemoveField}
-                        />
-                      )}
-
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={rectIntersection}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={table.fields.map((f, i) => `${table.index}-${i}`)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {table.fields.map((field, fieldindex) =>
+                            <DataField
+                              field={field}
+                              dragId={`${table.index}-${fieldindex}`}
+                              dragOverlay={null}
+                              fieldindex={fieldindex}
+                              table={table}
+                              selectedFieldsSet={selectedFieldsSet}
+                              onSelectedField={onSelectedField}
+                              onEditField={() => setEditField({ ...field, index: fieldindex, tableindex: table.index })}
+                              onRemoveField={onRemoveField}
+                            />
+                          )}
+                        </SortableContext>
+                        <DragOverlay>
+                          {dragId ?
+                            <DataField
+                              dragOverlay={dragId != null}
+                              dragId={dragId}
+                              field={tables[dragId.split("-")[0]].fields[dragId.split("-")[1]]}
+                              fieldindex={dragId.split("-")[1]}
+                              table={table}
+                              selectedFieldsSet={new Set()}
+                              onSelectedField={() => null}
+                              onEditField={() => null}
+                              onRemoveField={() => null}
+                            />
+                            : null
+                          }
+                        </DragOverlay>
+                      </DndContext>
                     </Accordion.Panel>
                   </Accordion.Item>
                 )}
@@ -813,69 +870,71 @@ function App() {
 
 
         {/* Modals */}
-        {editField ?
-          <Modal opened={editField != null} onClose={() => setEditField(null)} title="Edit Field">
-            <div className="flex flex-col gap-3">
-              <div className="flex gap-2">
-                <Input.Wrapper label="Field Name">
-                  <Input error={invalidName(editField.name)} placeholder='Field Name' label='Field Name' value={editField.name} onChange={e => setEditField({ ...editField, name: e.target.value })} />
-                </Input.Wrapper>
-                <Select placeholder="Data Type" label="Data Type" value={editField.type} onChange={(fieldtype) => setEditField({ ...editField, type: fieldtype })} data={FIELD_TYPES} />
-              </div>
+        {
+          editField ?
+            <Modal opened={editField != null} onClose={() => setEditField(null)} title="Edit Field">
+              <div className="flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Input.Wrapper label="Field Name">
+                    <Input error={invalidName(editField.name)} placeholder='Field Name' label='Field Name' value={editField.name} onChange={e => setEditField({ ...editField, name: e.target.value })} />
+                  </Input.Wrapper>
+                  <Select placeholder="Data Type" label="Data Type" value={editField.type} onChange={(fieldtype) => setEditField({ ...editField, type: fieldtype })} data={FIELD_TYPES} />
+                </div>
 
-              <div className="flex gap-2 my-2">
-                <NumberInput allowDecimal={editField.type == 'float'} label="Min" disabled={editField.type == 'boolean'} placeholder='Min' value={editField.min} onChange={v => setEditField({ ...editField, min: v })} />
-                <NumberInput allowDecimal={editField.type == 'float'} label="Max" disabled={editField.type == 'boolean'} placeholder='Max' value={editField.max} onChange={v => setEditField({ ...editField, max: v })} />
-              </div>
+                <div className="flex gap-2 my-2">
+                  <NumberInput allowDecimal={editField.type == 'float'} label="Min" disabled={editField.type == 'boolean'} placeholder='Min' value={editField.min} onChange={v => setEditField({ ...editField, min: v })} />
+                  <NumberInput allowDecimal={editField.type == 'float'} label="Max" disabled={editField.type == 'boolean'} placeholder='Max' value={editField.max} onChange={v => setEditField({ ...editField, max: v })} />
+                </div>
 
 
-              <div className="flex gap-4 my-2">
-                <Switch
-                  disabled={editField.type == 'boolean'}
-                  checked={editField.primarykey}
-                  onChange={(event) => setEditField({ ...editField, primarykey: event.currentTarget.checked })}
-                  color="orange"
-                  label="Primary Key"
-                  size="sm"
+                <div className="flex gap-4 my-2">
+                  <Switch
+                    disabled={editField.type == 'boolean'}
+                    checked={editField.primarykey}
+                    onChange={(event) => setEditField({ ...editField, primarykey: event.currentTarget.checked })}
+                    color="orange"
+                    label="Primary Key"
+                    size="sm"
+                  />
+                  <Switch
+                    disabled={editField.type == 'boolean'}
+                    checked={editField.unique}
+                    onChange={(event) => setEditField({ ...editField, unique: event.currentTarget.checked })}
+                    color="grape"
+                    label="Unique"
+                    size="sm"
+                  />
+                  <Switch
+                    disabled={editField.type == 'boolean'}
+                    checked={editField.autoincrement}
+                    onChange={(event) => setEditField({ ...editField, autoincrement: event.currentTarget.checked })}
+                    color="pink"
+                    label="Auto Increment"
+                    size="sm"
+                  />
+                </div>
+
+                <Select
+                  placeholder="Foreign Key to Table"
+                  label="Foreign Key"
+                  description="Select the table to connect to"
+                  value={editField.foreignkey}
+                  onChange={(key) => setEditField({ ...editField, foreignkey: key })}
+                  data={foreignKeyOptions}
                 />
-                <Switch
-                  disabled={editField.type == 'boolean'}
-                  checked={editField.unique}
-                  onChange={(event) => setEditField({ ...editField, unique: event.currentTarget.checked })}
-                  color="grape"
-                  label="Unique"
-                  size="sm"
-                />
-                <Switch
-                  disabled={editField.type == 'boolean'}
-                  checked={editField.autoincrement}
-                  onChange={(event) => setEditField({ ...editField, autoincrement: event.currentTarget.checked })}
-                  color="pink"
-                  label="Auto Increment"
-                  size="sm"
-                />
+
+                {tables[editField.tableindex].fields[editField.index].primarykey && !editField.primarykey ?
+                  <Alert variant="light" color="orange" title="Disabling Primary Key" icon={<MdWarning />}>
+                    Disabling the primary key will disconnect all the tables connected to this field
+                  </Alert>
+                  : null}
+
+                <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={onEditField}>Update Field</Button>
+
               </div>
-
-              <Select
-                placeholder="Foreign Key to Table"
-                label="Foreign Key"
-                description="Select the table to connect to"
-                value={editField.foreignkey}
-                onChange={(key) => setEditField({ ...editField, foreignkey: key })}
-                data={foreignKeyOptions}
-              />
-
-              {tables[editField.tableindex].fields[editField.index].primarykey && !editField.primarykey ?
-                <Alert variant="light" color="orange" title="Disabling Primary Key" icon={<MdWarning />}>
-                  Disabling the primary key will disconnect all the tables connected to this field
-                </Alert>
-                : null}
-
-              <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={onEditField}>Update Field</Button>
-
-            </div>
-          </Modal>
-          : null}
+            </Modal>
+            : null
+        }
 
         <Modal opened={tableListOfForeignKeys.length > 0} onClose={() => setForeignKeyOptions([])} title="Edit Field">
           <div className="flex flex-col gap-3">
@@ -895,8 +954,8 @@ function App() {
 
         <Footer />
 
-      </div>
-    </MantineProvider>
+      </div >
+    </MantineProvider >
   )
 }
 
