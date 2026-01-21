@@ -5,14 +5,14 @@ import FIELD_TYPES from '../assets/fieldtypes.json';
 const mapFieldTypes = new Map();
 for (const f of FIELD_TYPES) mapFieldTypes.set(f.value, f.label);
 
-function DataField({ table, field, fieldindex, onEditField, onRemoveField }) {
+function DataField({ table, field, fieldindex, onEditField, onRemoveField, onSelectedField, selectedFieldsSet }) {
     return (
         <div className="flex gap-2 items-center bg-gray-50 p-2 border-2 border-gray-200 rounded-2xl">
             <div className="cursor-grab active:cursor-grabbing"><GripVertical size={16} /></div>
             <div className="flex flex-col gap-2 w-full">
                 <div className="flex gap-2  items-center">
-                    <Checkbox color="teal" />
-                    <Input style={{ width: "100%", fontWeight: "bold" }} radius="lg" size="xs" placeholder='Field Name' value={field.name} />
+                    <Checkbox color="teal" className='field-checkbox' checked={selectedFieldsSet.has(`${table.index}-${fieldindex}`)} onChange={(e) => onSelectedField(table.index, fieldindex, e.target.checked)} />
+                    <Input style={{ width: "100%", fontWeight: "bold" }} radius="lg" size="xs" placeholder='Field Name' value={field.name} onChange={() => null} />
 
                     <Tooltip label="Edit field">
                         <ActionIcon onClick={onEditField} size="xs" variant='outline' color='gray'>

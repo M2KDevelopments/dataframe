@@ -48,6 +48,8 @@ function App() {
   const [foreignkeySelected, setForeignkeySelected] = useState("")
   const [tableListOfForeignKeys, setForeignKeyOptions] = useState([])
 
+  const [selectedFieldsSet, setSelectedFieldsSet] = useState(new Set());
+
   // Search filtered list
   const filteredTables = useMemo(() => tables
     .map((t, idx) => ({ ...t, index: idx }))
@@ -238,7 +240,7 @@ function App() {
       if (list.length > 0) {
         const remove = await swal({
           title: `Remove Table`,
-          text: `Are you sure you want remove Table '${tName}. There are ${list.length} foreign key(s) connected to this table.`,
+          text: `Are you sure you want remove Table '${tName}. ${list.length} foreign key(s) connected to this table.`,
           icon: "warning",
           buttons: {
             cancel: "Cancel",
@@ -325,7 +327,7 @@ function App() {
     if (tables[tableIndex].fields.some((f) => f.primarykey && field.primarykey)) {
       return notifications.show({
         title: "Primary Key already exists",
-        message: "There is already a primary key in this table",
+        message: "There is a primary key already in this table",
         color: "orange",
         icon: <MdWarning />
       })
@@ -335,7 +337,7 @@ function App() {
     if (tables[tableIndex].fields.some((f) => f.foreignkey && field.foreignkey)) {
       return notifications.show({
         title: "Foreign Key already exists",
-        message: "There is already a primary key in this table",
+        message: "There is a primary key already in this table",
         color: "orange",
         icon: <MdWarning />
       })
@@ -418,7 +420,7 @@ function App() {
     if (editField.primarykey && tables[tableIndex].fields.some((f, i) => f.primarykey && i != editField.index)) {
       return notifications.show({
         title: "Primary Key already exists",
-        message: "There is already a primary key in this table",
+        message: "There is a primary key already in this table",
         color: "orange",
         icon: <MdWarning />
       })
@@ -427,7 +429,7 @@ function App() {
     if (editField.foreignkey && tables[tableIndex].fields.some((f, i) => f.foreignkey && i != editField.index)) {
       return notifications.show({
         title: "Foreign Key already exists",
-        message: "There is already a primary key in this table",
+        message: "There is a primary key already in this table",
         color: "orange",
         icon: <MdWarning />
       })
@@ -523,7 +525,7 @@ function App() {
       if (list.length > 0) {
         const remove = await swal({
           title: `Remove Field`,
-          text: `Are you sure you want remove '${field.name}' from Table '${tables[tableIndex].name}. There are ${list.length} foreign key(s) connected to this field.`,
+          text: `Are you sure you want remove '${field.name}' from Table '${tables[tableIndex].name}. ${list.length} foreign key(s) connected to this field.`,
           icon: "warning",
           buttons: {
             cancel: "Cancel",
@@ -576,6 +578,91 @@ function App() {
   }, [tables])
 
 
+  const onSelectedField = useCallback((tableIndex, fieldIndex, checked) => {
+    setSelectedFieldsSet(prev => {
+      if (checked) {
+        prev.add(`${tableIndex}-${fieldIndex}`)
+      } else {
+        prev.delete(`${tableIndex}-${fieldIndex}`)
+      }
+      return new Set(prev);
+    })
+  }, [])
+
+  const onRemoveMultipleFields = useCallback(async () => {
+    let fieldsWithPrimaryKeys = 0;
+    const primaryKeyTables = new Set();
+    const tableMap = {}// {tableIndex: [fieldIds]}
+    const setKeys = Array.from(selectedFieldsSet.values());
+
+    for (const id of setKeys) {
+      const [tableIndex, fieldIndex] = id.split('-');
+
+      // construct map
+      if (tableMap[tableIndex]) tableMap[tableIndex].push(parseInt(fieldIndex));
+      else tableMap[tableIndex] = [parseInt(fieldIndex)];
+
+      // check for primary key      
+      if (tables[tableIndex].fields[fieldIndex].primarykey) {
+        primaryKeyTables.add(tables[tableIndex].name)
+        fieldsWithPrimaryKeys++;
+      }
+    }
+
+    const tableCount = Object.keys(tableMap).length
+    if (fieldsWithPrimaryKeys > 0) {
+      const result = await swal({
+        title: "Remove Fields",
+        text: `Are you sure you want to remove ${selectedFieldsSet.size} field(s) from ${tableCount} table(s)? ${fieldsWithPrimaryKeys} field(s) with PRIMARY KEYS!`,
+        icon: "warning",
+        buttons: ['No', 'Yes']
+      });
+
+      if (!result) return;
+
+
+      // clear all foreign keys that have references to any of the primary keys selected
+      for (const i in tables) {
+        for (const j in tables[i].fields) {
+          if (primaryKeyTables.has(tables[i].fields[j].foreignkey)) {
+            tables[i].fields[j].foreignkey = '';
+          }
+        }
+      }
+
+    } else {
+      const result = await swal({
+        title: "Remove Fields",
+        text: `Are you sure you want to remove ${selectedFieldsSet.size} field(s) from ${tableCount} table(s)?`,
+        icon: "warning",
+        buttons: ['No', 'Yes']
+      });
+      if (!result) return;
+    }
+
+    const tableIndices = Object.keys(tableMap)
+
+    for (const tableIndex of tableIndices) {
+      const fieldIndices = tableMap[tableIndex];
+      const fieldSet = new Set();
+      for (const i of fieldIndices) fieldSet.add(i);
+      tables[tableIndex].fields = tables[tableIndex].fields.filter((f, i) => !fieldSet.has(i))
+    }
+
+    setSelectedFieldsSet(new Set());
+    setTables([...tables]);
+
+    // remove fields
+    notifications.show({
+      title: "Fields Removed",
+      message: `${selectedFieldsSet.size} field(s) removed`,
+      color: "green",
+      icon: <MdCheck />
+    })
+
+
+  }, [selectedFieldsSet, tables])
+
   return (
     <MantineProvider>
       <Notifications />
@@ -596,6 +683,12 @@ function App() {
             <Input.Wrapper label="Search">
               <Input placeholder='Search for Tables...' maxLength={100} leftSection={<SearchIcon />} radius={"md"} type='search' value={search} onChange={e => setSearch(e.target.value)} />
             </Input.Wrapper>
+
+            {/* Multiple Select Options */}
+            {selectedFieldsSet.size > 0 ? <div className='flex gap-3'>
+              <Button variant='outline' color="dark" size="xs" radius="lg" onClick={() => setSelectedFieldsSet(new Set())}>Clear All</Button>
+              <Button variant='filled' color="dark" size="xs" radius="lg" leftSection={<Trash2 size={12} />} onClick={onRemoveMultipleFields}>Remove All</Button>
+            </div> : null}
 
             {/* Tables */}
             <div className='flex flex-col gap-2 overflow-y-scroll min-h-4/5 bg-slate-50 p-2 rounded-2xl border-slate-100'>
@@ -673,12 +766,16 @@ function App() {
                       <Divider />
                       <div className="my-3"></div>
 
+
+
                       {table.fields.map((field, fieldindex) =>
                         <DataField
                           key={table.name + field.name}
                           field={field}
                           fieldindex={fieldindex}
                           table={table}
+                          selectedFieldsSet={selectedFieldsSet}
+                          onSelectedField={onSelectedField}
                           onEditField={() => setEditField({ ...field, index: fieldindex, tableindex: table.index })}
                           onRemoveField={onRemoveField}
                         />
