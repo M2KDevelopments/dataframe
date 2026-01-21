@@ -1,15 +1,16 @@
 import swal from 'sweetalert';
 import { ActionIcon, Button, Menu, Tooltip } from '@mantine/core';
 import { GroupIcon, HelpCircleIcon, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon, Share2Icon, Undo2Icon } from 'lucide-react';
-import { FaCcPaypal, FaGithub, FaMoneyBillWave, FaPaypal } from 'react-icons/fa';
+import { FaCcPaypal, FaGithub, FaMoneyBillWave, FaPaypal, FaSave } from 'react-icons/fa';
 import { BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
 import { SiBuymeacoffee, SiDrizzle, SiPrisma } from 'react-icons/si';
 import { notifications } from '@mantine/notifications';
-import { MdSupport, MdWarning } from 'react-icons/md';
+import { MdCheck, MdSupport, MdWarning } from 'react-icons/md';
+import { saveProject } from '../helpers/memory'
 
 const width = 200;
 
-function NavBar({ projectName, setProjectName, openDrawer }) {
+function NavBar({ projectName, setProjectName, openDrawer, tables }) {
 
 
     const onRename = async () => {
@@ -29,7 +30,8 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
         })
 
         if (!name) return;
-        if (!'qwertyuiopasdfghjklzxcvbnm_'.split("").some(char => char == name[0].toLowerCase())) {
+        if (!name.trim()) return;
+        if (!'qwertyuiopasdfghjklzxcvbnm1234567890-_'.split("").some(char => char == name[0].toLowerCase())) {
             return notifications.show({
                 title: "Invalid Table Name",
                 message: "Please enter a valid table name",
@@ -42,11 +44,47 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
     }
 
     const onFile = (value) => {
+
+        const newProject = async () => {
+            const name = await swal({
+                title: `New Project`,
+                text: `Enter the name of the new project`,
+                icon: "info",
+                buttons: ['Cancel', 'Rename'],
+                content: {
+                    element: "input",
+                    attributes: {
+                        value: 'DataFrame',
+                        placeholder: "Enter the name of the project e.g DataFrame",
+
+                    }
+                }
+            })
+            if (!name) return;
+            if (!name.trim()) return;
+            if (!'qwertyuiopasdfghjklzxcvbnm1234567890-_'.split("").some(char => char == name[0].toLowerCase())) {
+                return notifications.show({
+                    title: "Invalid Project Name",
+                    message: "Please enter a valid project name. ",
+                    color: "orange",
+                    icon: <MdWarning />
+                })
+            }
+            window.localStorage.setItem('project', name);
+            setProjectName(name)
+        }
+
         switch (value) {
             case "open":
                 break;
 
+            case "new":
+                newProject();
+                break;
+
             case "save":
+                saveProject(projectName, tables);
+                notifications.show({ title: "Saved Project", message: `${projectName} was saved successfully`, icon: <MdCheck />, color: "green" })
                 break;
 
             case "saveas":
@@ -141,9 +179,12 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
                             <Menu.Label>{projectName}</Menu.Label>
                             <Menu.Item onClick={() => onFile('open')} rightSection={<span className='text-xs font-thin'>CTRL+O</span>}>Open</Menu.Item>
                             <Menu.Item onClick={() => onFile('new')} rightSection={<span className='text-xs font-thin'>CTRL+N</span>}>New</Menu.Item>
-                            <Menu.Item onClick={() => onFile('save')} rightSection={<span className='text-xs font-thin'>CTRL+S</span>}>Save</Menu.Item>
-                            <Menu.Item onClick={() => onFile('saveas')} rightSection={<span className='text-xs font-thin'>CTRL+SHIFT+S</span>}>Save As</Menu.Item>
 
+                            <Menu.Divider />
+
+                            <Menu.Item onClick={() => onFile('save')} rightSection={<span className='text-xs font-thin'>CTRL+S</span>}>Save</Menu.Item>
+                            {/* <Menu.Item onClick={() => onFile('saveas')} rightSection={<span className='text-xs font-thin'>CTRL+SHIFT+S</span>}>Save As</Menu.Item> */}
+                            {/* <Menu.Divider /> */}
                             <Menu.Sub>
                                 <Menu.Sub.Target>
                                     <Menu.Sub.Item>Import</Menu.Sub.Item>
@@ -157,7 +198,6 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
                                 </Menu.Sub.Dropdown>
                             </Menu.Sub>
 
-                            <Menu.Divider />
                             <Menu.Sub>
                                 <Menu.Sub.Target>
                                     <Menu.Sub.Item>Export</Menu.Sub.Item>
@@ -171,7 +211,7 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
                                 </Menu.Sub.Dropdown>
                             </Menu.Sub>
 
-                            <Menu.Item onClick={() => onFile('share')} rightSection={<Share2Icon size={16} />}>Share</Menu.Item>
+                            {/* <Menu.Item onClick={() => onFile('share')} rightSection={<Share2Icon size={16} />}>Share</Menu.Item> */}
                         </Menu.Dropdown>
                     </Menu>
 
@@ -184,12 +224,12 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
                         <Menu.Dropdown>
                             <Menu.Label>View</Menu.Label>
                             <Menu.Item onClick={() => onView('fullscreen')} rightSection={<span className='font-thin'>F11</span>}>Fullscreen</Menu.Item>
-                            <Menu.Divider />
-                            <Menu.Item onClick={() => onView('undo')} leftSection={<Undo2Icon size={12} />} rightSection={<span className='text-xs font-thin'>CTRL+Z</span>}>Undo</Menu.Item>
-                            <Menu.Item onClick={() => onView('redo')} leftSection={<Redo2Icon size={12} />} rightSection={<span className='text-xs font-thin'>CTRL+Y</span>}>Redo</Menu.Item>
-                            <Menu.Divider />
+                            {/* <Menu.Divider /> */}
+                            {/* <Menu.Item onClick={() => onView('undo')} leftSection={<Undo2Icon size={12} />} rightSection={<span className='text-xs font-thin'>CTRL+Z</span>}>Undo</Menu.Item> */}
+                            {/* <Menu.Item onClick={() => onView('redo')} leftSection={<Redo2Icon size={12} />} rightSection={<span className='text-xs font-thin'>CTRL+Y</span>}>Redo</Menu.Item> */}
+                            {/* <Menu.Divider /> */}
                             {/* <Menu.Item onClick={() => onView('teams')} rightSection={<GroupIcon size={16} />}>Teams</Menu.Item> */}
-                            <Menu.Item onClick={() => onView('logs')} rightSection={<LogsIcon size={12} />}>Logs</Menu.Item>
+                            {/* <Menu.Item onClick={() => onView('logs')} rightSection={<LogsIcon size={12} />}>Logs</Menu.Item> */}
 
                         </Menu.Dropdown>
                     </Menu>

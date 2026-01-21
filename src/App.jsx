@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 // Components
 import DataField from './components/DataField';
-import Footer from './components/Footer'
 import NavBar from './components/NavBar'
 import FIELD_TYPES from './assets/fieldtypes.json';
 
@@ -26,6 +25,7 @@ import { PointerSensor, KeyboardSensor, useSensor, useSensors, rectIntersection 
 import Drawflow from 'drawflow'
 import 'drawflow/dist/drawflow.min.css';
 import './drawflow.css';
+import { getProject } from './helpers/memory';
 
 
 const DEFAULT_FIELD = {
@@ -44,7 +44,7 @@ const DEFAULT_FIELD = {
 
 function App() {
 
-  const [projectName, setProjectName] = useState(window.localStorage.getItem('project') || "New Project")
+  const [projectName, setProjectName] = useState(window.localStorage.getItem('project') || "DataFrame")
   const [opened, { open, close }] = useDisclosure(false);
   const [search, setSearch] = useState('');
   const [drawflowEditor, setDrawFlowEditor] = useState(null);
@@ -89,6 +89,10 @@ function App() {
       editor.start();
       setDrawFlowEditor(editor);
     }
+
+    const data = getProject();
+    setProjectName(data.name || "DataFrame")
+    setTables(data.tables || []);
   }, [])
 
   useEffect(() => {
@@ -731,7 +735,7 @@ function App() {
       <Notifications />
 
       <div className='w-full h-full'>
-        <NavBar projectName={projectName} setProjectName={setProjectName} openDrawer={open} />
+        <NavBar projectName={projectName} setProjectName={setProjectName} openDrawer={open} tables={tables} />
 
         <Drawer opened={opened} onClose={close} title={
           <div className='grid grid-cols-2'>
