@@ -91,6 +91,65 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (drawflowEditor) {
+      drawflowEditor.clear();
+      const tableNameAndIdMap = new Map();
+      for (const table of tables) {
+
+        const inputs = 1;
+        const outputs = 1;
+        const posx = 90;
+        const posy = 90;
+        const className = '';
+        const html = `
+        <details open class="p-2 rounded-lg w-72 border border-gray-200">
+          <summary class="cursor-pointer list-none">
+            <div class="flex gap-2 items-center justify-between">
+              <span class="font-bold text-md px-6">${table.name} (${table.fields.length})</span>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
+          </summary>
+          
+          <div class="flex flex-col gap-3 mt-3">
+            ${table.fields.map(field =>
+          `<p class="text-sm"> 
+            <span class="font-bold">${field.name}</span>
+            <span class="font-thin text-xs">${field.type}</span>
+            <span class="font-thin text-xs">${field.primarykey ? " PRIMARY KEY" : ""}</span>
+            <span class="font-thin text-xs">${field.foreignkey ? " FOREIGN KEY" : ""}</span>
+            <span class="font-thin text-xs">${field.unique ? " UNIQUE" : ""}</span>
+            <span class="font-thin text-xs">${field.autoincrement ? " AUTOINCREMENT" : ""}</span>
+          </p>
+          <hr/>
+          `
+        ).join("\n")}
+          </div>
+        </details>
+      `;
+        const id = drawflowEditor.addNode(table.name, inputs, outputs, posx, posy, className, table, html);
+        tableNameAndIdMap.set(table.name, id);
+      }
+
+      console.log(tableNameAndIdMap)
+
+      for (const table of tables) {
+        for (const field of table.fields) {
+          if (field.foreignkey) {
+            const tablename = field.foreignkey;
+            const outputNodeId = tableNameAndIdMap.get(tablename);
+            const inputNodeId = tableNameAndIdMap.get(table.name);
+            drawflowEditor.addConnection(outputNodeId, inputNodeId, 'output_1', 'input_1');
+          }
+        }
+      }
+
+
+    }
+  }, [tables, drawflowEditor])
+
   const handleDragStart = (event) => setDragId(event.active.id);
 
   const handleDragEnd = async (event) => {
@@ -114,26 +173,6 @@ function App() {
     }
     return false;
   }, []);
-
-
-  const getNodeHTML = useCallback((table) => `
-  <details class="p-2 rounded-lg w-96 border border-gray-200">
-    <summary class="cursor-pointer list-none">
-      <div class="flex gap-2 items-center justify-between">
-        <span class="font-bold text-md px-6">${table.name}</span>
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
-      </div>
-    </summary>
-    
-    <div class="flex flex-col gap-3 mt-3">
-      <span class="text-sm">${"Your fields go here"}</span>
-    </div>
-  </details>
-`, []);
-
-
 
   const onAddTable = useCallback((name) => {
     if (!name || !name.trim()) return;
@@ -160,13 +199,6 @@ function App() {
     if (tables.some(t => t.name == name)) return;
 
     const table = { name, timestamp: false, fields: [] }
-    const inputs = 1;
-    const outputs = 1;
-    const posx = 90;
-    const posy = 90;
-    const className = '';
-    const html = getNodeHTML(table);
-    drawflowEditor.addNode(name, inputs, outputs, posx, posy, className, table, html);
     setTables(prev => [...prev, table].sort((a, b) => a.name.localeCompare(b.name)));
     setTablename('');
 
@@ -175,7 +207,7 @@ function App() {
     if (input) input.focus();
 
     return notifications.show({ title: "Table Added", message: `${name} was added successfully`, color: "green", icon: <MdCheck /> })
-  }, [drawflowEditor, getNodeHTML, tables])
+  }, [tables])
 
   const onPrimaryKey = useCallback((tableindex, field) => {
     if (tables[tableindex].fields.some(f => f.primarykey)) return notifications.show({
@@ -257,6 +289,7 @@ function App() {
     }
 
     tables[index].name = name;
+    // const { data, pos_x, pos_y, outputs } = drawflowEditor.getNodeFromId(tables[index].name);
     setTables([...tables]);
   }, [tables]);
 
@@ -264,7 +297,7 @@ function App() {
 
     const field = table.fields.find(f => f.primarykey);
 
-    if (field.primarykey) {
+    if (field && field.primarykey) {
       const tName = table.name;
       const list = tables.filter(t => t.fields.some(f => f.foreignkey == tName)).map(t => t.name);
       if (list.length > 0) {
@@ -294,6 +327,7 @@ function App() {
               }
             }
           }
+
           setTables(tables.filter(t => t.name != table.name));
         } else if (remove == 'removeAll') {
           setTables(tables.filter(t => t.name != table.name && !t.fields.some(f => f.foreignkey == tName)));
@@ -316,7 +350,6 @@ function App() {
     })
 
     if (!result) return;
-
     setTables(tables.filter(t => t.name != table.name));
   }, [tables]);
 
@@ -849,23 +882,7 @@ function App() {
         {/* Drawflow show tables */}
         <main className='w-screen h-screen fixed top-0 left-0'>
           <div id="drawflow" className='w-full h-full'></div>
-          <div className='flex gap-2 justify-end relative -top-16 px-4'>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_in()}>
-              <ZoomInIcon />
-            </ActionIcon>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_out()}>
-              <ZoomOutIcon />
-            </ActionIcon>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_reset()}>
-              <RefreshCw />
-            </ActionIcon>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_max()}>
-              <Maximize2Icon />
-            </ActionIcon>
-            <ActionIcon radius={20} color='gray' variant='outline' onClick={() => drawflowEditor?.zoom_min()}>
-              <Minimize2Icon />
-            </ActionIcon>
-          </div>
+
         </main>
 
 
@@ -952,7 +969,33 @@ function App() {
 
 
 
-        <Footer />
+        <footer className='w-full h-8 fixed bottom-0 left-0 bg-gray-700 flex flex-col p-2 justify-center items-start  z-10'>
+          <div className="flex w-full items-center">
+            <p className='text-xs text-white text-start px-4 w-full'>Data Frame</p>
+            <div className='flex gap-2 justify-end items-center w-full px-4'>
+              <Tooltip label="Zoom in">
+                <ActionIcon size={"sm"} radius={"lg"} color='white' variant='outline' onClick={() => drawflowEditor?.zoom_in()}>
+                  <ZoomInIcon size={15} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Zoom out">
+                <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_out()}>
+                  <ZoomOutIcon size={15} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Zoom reset">
+                <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_reset()}>
+                  <Maximize2Icon size={15} />
+                </ActionIcon>
+              </Tooltip>
+              <Tooltip label="Zoom refresh">
+                <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_refresh()}>
+                  <RefreshCw size={15} />
+                </ActionIcon>
+              </Tooltip>
+            </div>
+          </div>
+        </footer>
 
       </div >
     </MantineProvider >

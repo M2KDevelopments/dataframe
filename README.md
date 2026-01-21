@@ -1,16 +1,40 @@
-# React + Vite
+# Data Frame
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Data Frame is a free open source project to quickly visualize database tables and export code to the relational database or ORM of choice.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Visualize database table structures
+- Export code for multiple ORMs and relational databases
+- Intuitive drag-and-drop interface
+- Free and open source
 
-## React Compiler
+## Technology Stack
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+- Built with [React](https://react.dev/) and [Vite](https://vitejs.dev/)
+- UI components powered by [Mantine](https://mantine.dev/)
+- Visual workflow editor with [Drawflow](https://drawflow.io/)
+- Icons from [Lucide React](https://lucide.dev/) and [React Icons](https://react-icons.github.io/react-icons/)
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## License
+
+See LICENSE file for details.
