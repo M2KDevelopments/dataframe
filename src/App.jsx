@@ -85,21 +85,23 @@ function App() {
 
 
   const getNodeHTML = useCallback((table) => `
-          <div title="${table.name}" aria-label="Table" class="p-2 rounded-lg w-96">
-            <div class="flex flex-col gap-3">
-              <div class="flex gap-2">
-                <span class="font-bold text-md">${table.name}</span>
-              </div>
-              <div class="flex gap-2 my-2">
-                ${table.weather ? `<span class="border-2 border-orange-500 shadow shadow-orange-300 rounded-4xl px-3 py-2 text-xs">${table.weather}</span>` : ""}
-                ${table.atmosphere ? `<span class="border-2 border-green-500 shadow shadow-green-300 rounded-4xl px-3 py-2 text-xs">${table.atmosphere}</span>` : ""}
-                ${table.dateTime ? `<span class="border-2 border-purple-500 shadow shadow-purple-300 rounded-4xl px-3 py-2 text-xs">${table.dateTime}</span>` : ""}
-                ${table.area ? `<span class="border-2 border-red-500 shadow shadow-red-300 rounded-4xl px-3 py-2 text-xs">${table.area}</span>` : ""}
-              </div>
-              <span class="text-sm">${"Your fields go here"}</span>
-            </div>
-          </div>
-          `, [])
+  <details class="p-2 rounded-lg w-96 border border-gray-200">
+    <summary class="cursor-pointer list-none">
+      <div class="flex gap-2 items-center justify-between">
+        <span class="font-bold text-md px-6">${table.name}</span>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </div>
+    </summary>
+    
+    <div class="flex flex-col gap-3 mt-3">
+      <span class="text-sm">${"Your fields go here"}</span>
+    </div>
+  </details>
+`, []);
+
+
 
   const onAddTable = useCallback((name) => {
     if (!name || !name.trim()) return;
