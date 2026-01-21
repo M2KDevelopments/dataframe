@@ -139,9 +139,10 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
 
                         <Menu.Dropdown>
                             <Menu.Label>{projectName}</Menu.Label>
-                            <Menu.Item onClick={() => onFile('open')}>Open</Menu.Item>
-                            <Menu.Item onClick={() => onFile('save')} rightSection={<SaveIcon size={16} />}>Save</Menu.Item>
-                            <Menu.Item onClick={() => onFile('saveas')} rightSection={<SaveAllIcon size={16} />}>Save As</Menu.Item>
+                            <Menu.Item onClick={() => onFile('open')} rightSection={<span className='text-xs font-thin'>CTRL+O</span>}>Open</Menu.Item>
+                            <Menu.Item onClick={() => onFile('new')} rightSection={<span className='text-xs font-thin'>CTRL+N</span>}>New</Menu.Item>
+                            <Menu.Item onClick={() => onFile('save')} rightSection={<span className='text-xs font-thin'>CTRL+S</span>}>Save</Menu.Item>
+                            <Menu.Item onClick={() => onFile('saveas')} rightSection={<span className='text-xs font-thin'>CTRL+SHIFT+S</span>}>Save As</Menu.Item>
 
                             <Menu.Sub>
                                 <Menu.Sub.Target>
@@ -184,12 +185,11 @@ function NavBar({ projectName, setProjectName, openDrawer }) {
                             <Menu.Label>View</Menu.Label>
                             <Menu.Item onClick={() => onView('fullscreen')} rightSection={<span className='font-thin'>F11</span>}>Fullscreen</Menu.Item>
                             <Menu.Divider />
-                            <Menu.Item onClick={() => onView('undo')} rightSection={<Undo2Icon size={16} />}>Undo</Menu.Item>
-                            <Menu.Item onClick={() => onView('redo')} rightSection={<Redo2Icon size={16} />}>Redo</Menu.Item>
-                            <Menu.Item onClick={() => onView('reset')} rightSection={<RecycleIcon size={16} />}>Reset</Menu.Item>
+                            <Menu.Item onClick={() => onView('undo')} leftSection={<Undo2Icon size={12} />} rightSection={<span className='text-xs font-thin'>CTRL+Z</span>}>Undo</Menu.Item>
+                            <Menu.Item onClick={() => onView('redo')} leftSection={<Redo2Icon size={12} />} rightSection={<span className='text-xs font-thin'>CTRL+Y</span>}>Redo</Menu.Item>
                             <Menu.Divider />
                             {/* <Menu.Item onClick={() => onView('teams')} rightSection={<GroupIcon size={16} />}>Teams</Menu.Item> */}
-                            <Menu.Item onClick={() => onView('logs')} rightSection={<LogsIcon size={16} />}>Logs</Menu.Item>
+                            <Menu.Item onClick={() => onView('logs')} rightSection={<LogsIcon size={12} />}>Logs</Menu.Item>
 
                         </Menu.Dropdown>
                     </Menu>
