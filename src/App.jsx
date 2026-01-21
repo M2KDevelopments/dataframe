@@ -10,7 +10,7 @@ import FIELD_TYPES from './assets/fieldtypes.json';
 import swal from 'sweetalert';
 import { MdCheck, MdWarning } from 'react-icons/md';
 import { ArrowDown01, Clock, Edit2, EditIcon, KeyRound, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
-import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Modal, Switch } from '@mantine/core';
+import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Modal, Switch, Alert } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
@@ -227,6 +227,53 @@ function App() {
   }, [tables]);
 
   const onRemoveTable = useCallback(async (table) => {
+
+    const field = table.fields.find(f => f.primarykey);
+
+    if (field.primarykey) {
+      const tName = table.name;
+      const list = tables.filter(t => t.fields.some(f => f.foreignkey == tName)).map(t => t.name);
+      if (list.length > 0) {
+        const remove = await swal({
+          title: `Remove Table`,
+          text: `Are you sure you want remove Table '${tName}. There are ${list.length} foreign key(s) connected to this table.`,
+          icon: "warning",
+          buttons: {
+            cancel: "Cancel",
+            remove: {
+              text: "Just Remove Table",
+              value: "remove",
+            },
+            removeAll: {
+              text: "Remove with Connected Tables",
+              value: "removeAll",
+            }
+          }
+        })
+        if (!remove) return;
+
+        if (remove == 'remove') {
+          for (const i in tables) {
+            for (const j in tables[i].fields) {
+              if (tables[i].fields[j].foreignkey == tName) {
+                tables[i].fields[j].foreignkey = '';
+              }
+            }
+          }
+          setTables(tables.filter(t => t.name != table.name));
+        } else if (remove == 'removeAll') {
+          setTables(tables.filter(t => t.name != table.name && !t.fields.some(f => f.foreignkey == tName)));
+        }
+
+        return notifications.show({
+          title: "Table Removed",
+          message: "Field was removed",
+          color: "green",
+          icon: <MdCheck />
+        })
+      }
+    }
+
     const result = await swal({
       title: `Remove ${table.name}`,
       text: `Are you sure you want remove Table '${table.name}'`,
@@ -270,6 +317,26 @@ function App() {
         color: "orange",
         icon: <MdWarning />
       });
+    }
+
+    // check for primary keys
+    if (tables[tableIndex].fields.some((f) => f.primarykey && field.primarykey)) {
+      return notifications.show({
+        title: "Primary Key already exists",
+        message: "There is already a primary key in this table",
+        color: "orange",
+        icon: <MdWarning />
+      })
+    }
+
+    // check for foreign keys
+    if (tables[tableIndex].fields.some((f) => f.foreignkey && field.foreignkey)) {
+      return notifications.show({
+        title: "Foreign Key already exists",
+        message: "There is already a primary key in this table",
+        color: "orange",
+        icon: <MdWarning />
+      })
     }
 
     // Check min and max are avlue
@@ -345,6 +412,34 @@ function App() {
       })
     }
 
+    // check for primary keys
+    if (editField.primarykey && tables[tableIndex].fields.some((f, i) => f.primarykey && i != editField.index)) {
+      return notifications.show({
+        title: "Primary Key already exists",
+        message: "There is already a primary key in this table",
+        color: "orange",
+        icon: <MdWarning />
+      })
+    }
+    // check for foreign keys
+    if (editField.foreignkey && tables[tableIndex].fields.some((f, i) => f.foreignkey && i != editField.index)) {
+      return notifications.show({
+        title: "Foreign Key already exists",
+        message: "There is already a primary key in this table",
+        color: "orange",
+        icon: <MdWarning />
+      })
+    }
+
+    if (editField.primarykey && editField.foreignkey) {
+      return notifications.show({
+        title: "Primary and Foreign Key",
+        message: `Primary key and foreign key were set to the same field`,
+        color: "orange",
+        icon: <MdWarning />
+      });
+    }
+
     // check if it already exists
     if (tables[tableIndex].fields.some((f, i) => f.name == field.name && i != editField.index)) {
       return notifications.show({
@@ -386,6 +481,17 @@ function App() {
       }
     }
 
+    //disabled primary key
+    if (tables[editField.tableindex].fields[editField.index].primarykey && !editField.primarykey) {
+      for (const i in tables) {
+        for (const j in tables[i].fields) {
+          if (tables[i].fields[j].foreignkey == tables[editField.tableindex].name) {
+            tables[i].fields[j].foreignkey = '';
+          }
+        }
+      }
+    }
+
     tables[editField.tableindex].fields[editField.index] = {
       name: editField.name,
       type: editField.type,
@@ -408,13 +514,59 @@ function App() {
 
   const onRemoveField = useCallback(async (tableIndex, fieldIndex) => {
     const field = tables[tableIndex].fields[fieldIndex];
+
+    if (field.primarykey) {
+      const tName = tables[tableIndex].name;
+      const list = tables.filter(t => t.fields.some(f => f.foreignkey == tName)).map(t => t.name);
+      if (list.length > 0) {
+        const remove = await swal({
+          title: `Remove Field`,
+          text: `Are you sure you want remove '${field.name}' from Table '${tables[tableIndex].name}. There are ${list.length} foreign key(s) connected to this field.`,
+          icon: "warning",
+          buttons: {
+            cancel: "Cancel",
+            remove: {
+              text: "Just Remove Field",
+              value: "remove",
+            },
+            removeAll: {
+              text: "Remove with Connected Tables",
+              value: "removeAll",
+            }
+          }
+        })
+        if (!remove) return;
+
+        if (remove == 'remove') {
+          for (const i in tables) {
+            for (const j in tables[i].fields) {
+              if (tables[i].fields[j].foreignkey == tName) {
+                tables[i].fields[j].foreignkey = '';
+              }
+            }
+          }
+          tables[tableIndex].fields = tables[tableIndex].fields.filter((f, i) => i != fieldIndex);
+          setTables([...tables]);
+        } else if (remove == 'removeAll') {
+          tables[tableIndex].fields = tables[tableIndex].fields.filter((f, i) => i != fieldIndex);
+          setTables(tables.filter(t => !t.fields.some(f => f.foreignkey == tName)));
+        }
+
+        return notifications.show({
+          title: "Field Removed",
+          message: "Field was removed",
+          color: "green",
+          icon: <MdCheck />
+        })
+      }
+    }
+
     const result = await swal({
       title: `Remove Field`,
       text: `Are you sure you want remove '${field.name}' from Table '${tables[tableIndex].name}'`,
       icon: "warning",
       buttons: ['Cancel', 'Remove']
     })
-
     if (!result) return;
 
     tables[tableIndex].fields = tables[tableIndex].fields.filter((f, i) => i != fieldIndex);
@@ -613,6 +765,13 @@ function App() {
                 onChange={(key) => setEditField({ ...editField, foreignkey: key })}
                 data={foreignKeyOptions}
               />
+
+              {tables[editField.tableindex].fields[editField.index].primarykey && !editField.primarykey ?
+                <Alert variant="light" color="orange" title="Disabling Primary Key" icon={<MdWarning />}>
+                  Disabling the primary key will disconnect all the tables connected to this field
+                </Alert>
+                : null}
+
               <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={onEditField}>Update Field</Button>
 
             </div>
