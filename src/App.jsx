@@ -44,7 +44,7 @@ const DEFAULT_FIELD = {
 
 function App() {
 
-  const [projectName, setProjectName] = useState(window.localStorage.getItem('project') || "DataFrame")
+  const [projectName, setProjectName] = useState("DataFrame")
   const [opened, { open, close }] = useDisclosure(false);
   const [search, setSearch] = useState('');
   const [drawflowEditor, setDrawFlowEditor] = useState(null);

@@ -38,8 +38,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                 color: "orange",
                 icon: <MdWarning />
             })
-        }
-        window.localStorage.setItem('project', name || projectName);
+        } 
         setProjectName(name || projectName)
     }
 
@@ -69,8 +68,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                     color: "orange",
                     icon: <MdWarning />
                 })
-            }
-            window.localStorage.setItem('project', name);
+            } 
             setProjectName(name)
         }
 
