@@ -57,12 +57,13 @@ function App() {
   );
 
   // Tables and Fields
-  const [tables, setTables] = useState([]);//[{name:string, timestamp:false, fields:[ {name, type} ]}]
+  const [tables, setTables] = useState([]); //[{x,y,opened, name:string, timestamp:false, fields:[ {name, type} ]}]
   const [tablename, setTablename] = useState('')
   const [tablefield, setTableField] = useState(DEFAULT_FIELD)
   const [editField, setEditField] = useState(null);
   const [foreignkeySelected, setForeignkeySelected] = useState("")
-  const [tableListOfForeignKeys, setForeignKeyOptions] = useState([])
+  const [nodeForeignKeyEditDialgoue, setNodeForeignKeyEditDialogue] = useState(null) // {tableToConnect, fields}
+  const [tableListOfForeignKeys, setForeignKeyOptions] = useState([]);
   const [selectedFieldsSet, setSelectedFieldsSet] = useState(new Set());
 
   // Search filtered list
@@ -85,29 +86,136 @@ function App() {
     if (!document.querySelector('.drawflow')) {
       var id = document.getElementById("drawflow");
       const editor = new Drawflow(id);
+
       editor.reroute = true;
       editor.start();
+
       setDrawFlowEditor(editor);
+
+      /********************
+       * Handle Node Events 
+       * 
+       *******************/
+      let selectedTable = null;
+      editor.on("nodeSelected", (id) => {
+        const { data } = editor.getNodeFromId(id);
+        selectedTable = data;
+      })
+      editor.on("nodeRemoved", async () => {
+        if (selectedTable) {
+          const result = await swal({
+            title: "Remove Table",
+            text: `Are you sure want to remove ${selectedTable.name}? This will remove all connections related to this table`,
+            icon: "info",
+            buttons: ['Cancel', 'Remove']
+          })
+          if (!result) setTables(prev => [...prev]);
+          else setTables(prev => {
+            // remove all foreign key connections
+            for (const i in prev) {
+              for (const j in prev[i].fields) {
+                if (prev[i].fields[j].foreignkey == selectedTable.name) {
+                  prev[i].fields[j].foreignkey = '';
+                }
+              }
+            }
+            return prev.filter(t => t.name != selectedTable.name)
+          })
+        }
+      })
+
+      editor.on("connectionCreated", (event) => {
+        const { input_id, output_id } = event;
+        const { data: primaryKeytable } = editor.getNodeFromId(output_id);
+        const { data: foreignKeytable } = editor.getNodeFromId(input_id)
+        // check if there is primary
+        const primarykey = primaryKeytable.fields.find(f => f.primarykey)
+        if (!primarykey) {
+          notifications.show({
+            title: "Primary Key does NOT Exist",
+            message: `${primaryKeytable.name} does NOT have a primary key. Please create one`,
+            color: "orange", position: "top-right",
+            icon: <MdWarning />
+          });
+          return setTables(prev => [...prev])
+        }
+
+        // if the tables are already connected leave it alone
+        if (foreignKeytable.fields.some(f => f.foreignkey == primaryKeytable.name)) return;
+
+        // check if there is primary
+        if (!foreignKeytable.fields.some(f => f.type == primarykey.type && !f.primarykey)) {
+          notifications.show({
+            title: "Foreign Key Issue",
+            message: `Could not find a field with the same data type as ${primarykey.name}`,
+            color: "orange", position: "top-right",
+            icon: <MdWarning />
+          });
+          return setTables(prev => [...prev])
+        }
+
+
+        setNodeForeignKeyEditDialogue({
+          tableIndex: foreignKeytable.index,
+          tableToConnect: primaryKeytable.name,
+          fields: foreignKeytable.fields.filter(f => f.type == primarykey.type && !f.primarykey)
+        })
+
+      })
+
+      editor.on("connectionRemoved", (event) => {
+
+        const { input_id } = event;
+        const { data: table } = editor.getNodeFromId(input_id)
+        for (const i in table.fields) {
+          if (table.fields[i].foreignkey) {
+            table.fields[i].foreignkey = "";
+            break;
+          }
+        }
+        setTables(prev => {
+          const data = { ...table };
+          delete data["index"];
+          prev[table.index] = data;
+          return [...prev]
+        })
+      });
+      editor.on("nodeMoved", (id) => {
+        const { data: table, pos_x, pos_y } = editor.getNodeFromId(id);
+        table.x = pos_x;
+        table.y = pos_y;
+        setTables(prev => {
+          const data = { ...table };
+          delete data["index"];
+          prev[table.index] = data;
+          return [...prev]
+        })
+      })
+
     }
 
     const data = getProject();
     setProjectName(data.name || "DataFrame")
     setTables(data.tables || []);
+
   }, [])
 
+
+  // Redraw when table chhages
   useEffect(() => {
     if (drawflowEditor) {
       drawflowEditor.clear();
       const tableNameAndIdMap = new Map();
+      const tableIdAndNameMap = new Map();
       for (const table of tables) {
 
         const inputs = 1;
         const outputs = 1;
-        const posx = 90;
-        const posy = 90;
-        const className = '';
+        const posx = table.x || 90;
+        const posy = table.y || 90;
+        const className = table.name;
         const html = `
-        <details open class="p-2 rounded-lg w-72 border border-gray-200">
+        <details id="table-${table.name}" ${table.opened ? "open" : ""} class="p-2 rounded-lg w-72 border border-gray-200">
           <summary class="cursor-pointer list-none">
             <div class="flex gap-2 items-center justify-between">
               <span class="font-bold text-md px-6">${table.name} (${table.fields.length})</span>
@@ -135,11 +243,13 @@ function App() {
       `;
         const id = drawflowEditor.addNode(table.name, inputs, outputs, posx, posy, className, table, html);
         tableNameAndIdMap.set(table.name, id);
+        tableIdAndNameMap.set(id, table);
       }
 
-      console.log(tableNameAndIdMap)
 
-      for (const table of tables) {
+      for (const index in tables) {
+        const table = tables[index];
+        table.index = index;
         for (const field of table.fields) {
           if (field.foreignkey) {
             const tablename = field.foreignkey;
@@ -149,8 +259,6 @@ function App() {
           }
         }
       }
-
-
     }
   }, [tables, drawflowEditor])
 
@@ -185,7 +293,7 @@ function App() {
       return notifications.show({
         title: "Invalid Table Name",
         message: "No whitesplaces in table name",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -195,14 +303,14 @@ function App() {
       return notifications.show({
         title: "Invalid Table Name",
         message: "Please enter a valid table name",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
 
     if (tables.some(t => t.name == name)) return;
 
-    const table = { name, timestamp: false, fields: [] }
+    const table = { x: 90, y: 90, opened: true, name, timestamp: false, fields: [] }
     setTables(prev => [...prev, table].sort((a, b) => a.name.localeCompare(b.name)));
     setTablename('');
 
@@ -210,14 +318,14 @@ function App() {
     const input = document.getElementById('tablefield');
     if (input) input.focus();
 
-    return notifications.show({ title: "Table Added", message: `${name} was added successfully`, color: "green", icon: <MdCheck /> })
+    return notifications.show({ title: "Table Added", message: `${name} was added successfully`, color: "green", position: "top-right", icon: <MdCheck /> })
   }, [tables])
 
   const onPrimaryKey = useCallback((tableindex, field) => {
     if (tables[tableindex].fields.some(f => f.primarykey)) return notifications.show({
       title: "Primary Key Exist",
       message: `${tables[tableindex].name} already has a primary key`,
-      color: "orange",
+      color: "orange", position: "top-right",
       icon: <MdWarning />
     });
     setTableField({ ...field, primarykey: !field.primarykey })
@@ -227,14 +335,14 @@ function App() {
     if (field.primarykey) return notifications.show({
       title: "Field Issue",
       message: "This field is already a primary key",
-      color: "orange",
+      color: "orange", position: "top-right",
       icon: <MdWarning />
     });
 
     if (tables[tableindex].fields.some(f => f.foreignkey)) return notifications.show({
       title: "Foreign Key Exist",
       message: `${tables[tableindex].name} already has a foreign key`,
-      color: "orange",
+      color: "orange", position: "top-right",
       icon: <MdWarning />
     });
 
@@ -246,6 +354,7 @@ function App() {
           .map(t => ({ label: t.name, value: t.name }))
       ]
     )
+
   }, [tables])
 
   const onTableTimestamp = useCallback(async (index) => {
@@ -278,7 +387,7 @@ function App() {
       return notifications.show({
         title: "Invalid Table Name",
         message: "Please enter a valid table name",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -287,13 +396,12 @@ function App() {
       return notifications.show({
         title: "Table already exists",
         message: `${name} already exists in your list`,
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       });
     }
 
     tables[index].name = name;
-    // const { data, pos_x, pos_y, outputs } = drawflowEditor.getNodeFromId(tables[index].name);
     setTables([...tables]);
   }, [tables]);
 
@@ -340,7 +448,7 @@ function App() {
         return notifications.show({
           title: "Table Removed",
           message: "Field was removed",
-          color: "green",
+          color: "green", position: "top-right",
           icon: <MdCheck />
         })
       }
@@ -366,7 +474,7 @@ function App() {
       return notifications.show({
         title: "Invalid Field Name",
         message: "Please enter a valid field name",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -375,7 +483,7 @@ function App() {
       return notifications.show({
         title: "Invalid Field Name",
         message: "No whitesplaces in field name",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -385,7 +493,7 @@ function App() {
       return notifications.show({
         title: "Field already exists",
         message: `${field.name} already exists in the ${tables[tableIndex].name} Table`,
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       });
     }
@@ -395,7 +503,7 @@ function App() {
       return notifications.show({
         title: "Primary Key already exists",
         message: "There is a primary key already in this table",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -405,7 +513,7 @@ function App() {
       return notifications.show({
         title: "Foreign Key already exists",
         message: "There is a primary key already in this table",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -416,7 +524,7 @@ function App() {
         return notifications.show({
           title: "Invalid min value",
           message: `${field.name}'s max value should be a number`,
-          color: "orange",
+          color: "orange", position: "top-right",
           icon: <MdWarning />
         });
       }
@@ -425,7 +533,7 @@ function App() {
         return notifications.show({
           title: "Invalid max value",
           message: `${field.name}'s max value should be a number`,
-          color: "orange",
+          color: "orange", position: "top-right",
           icon: <MdWarning />
         });
       }
@@ -435,7 +543,7 @@ function App() {
         return notifications.show({
           title: "Invalid max and min values",
           message: `${field.name}'s max value should be greater than the min value`,
-          color: "orange",
+          color: "orange", position: "top-right",
           icon: <MdWarning />
         });
       }
@@ -452,7 +560,7 @@ function App() {
     notifications.show({
       title: "Field Added",
       message: `${field.name} was added successfully`,
-      color: "green",
+      color: "green", position: "top-right",
       icon: <MdCheck />
     })
   }, [tables])
@@ -469,7 +577,7 @@ function App() {
       return notifications.show({
         title: "Invalid Field Name",
         message: "Please enter a valid field name",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -478,7 +586,7 @@ function App() {
       return notifications.show({
         title: "Invalid Field Name",
         message: "No whitesplaces in field name",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -488,7 +596,7 @@ function App() {
       return notifications.show({
         title: "Primary Key already exists",
         message: "There is a primary key already in this table",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -497,7 +605,7 @@ function App() {
       return notifications.show({
         title: "Foreign Key already exists",
         message: "There is a primary key already in this table",
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       })
     }
@@ -506,7 +614,7 @@ function App() {
       return notifications.show({
         title: "Primary and Foreign Key",
         message: `Primary key and foreign key were set to the same field`,
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       });
     }
@@ -516,7 +624,7 @@ function App() {
       return notifications.show({
         title: "Field already exists",
         message: `${field.name} already exists in the ${tables[tableIndex].name} Table`,
-        color: "orange",
+        color: "orange", position: "top-right",
         icon: <MdWarning />
       });
     }
@@ -527,7 +635,7 @@ function App() {
         return notifications.show({
           title: "Invalid min value",
           message: `${field.name}'s max value should be a number`,
-          color: "orange",
+          color: "orange", position: "top-right",
           icon: <MdWarning />
         });
       }
@@ -536,7 +644,7 @@ function App() {
         return notifications.show({
           title: "Invalid max value",
           message: `${field.name}'s max value should be a number`,
-          color: "orange",
+          color: "orange", position: "top-right",
           icon: <MdWarning />
         });
       }
@@ -546,7 +654,7 @@ function App() {
         return notifications.show({
           title: "Invalid max and min values",
           message: `${field.name}'s max value should be greater than the min value`,
-          color: "orange",
+          color: "orange", position: "top-right",
           icon: <MdWarning />
         });
       }
@@ -578,7 +686,7 @@ function App() {
     notifications.show({
       title: "Field Updated",
       message: `${editField.name} was updated successfully`,
-      color: "green",
+      color: "green", position: "top-right",
       icon: <MdCheck />
     })
   }, [tables, editField])
@@ -626,7 +734,7 @@ function App() {
         return notifications.show({
           title: "Field Removed",
           message: "Field was removed",
-          color: "green",
+          color: "green", position: "top-right",
           icon: <MdCheck />
         })
       }
@@ -723,7 +831,7 @@ function App() {
     notifications.show({
       title: "Fields Removed",
       message: `${selectedFieldsSet.size} field(s) removed`,
-      color: "green",
+      color: "green", position: "top-right",
       icon: <MdCheck />
     })
 
@@ -957,6 +1065,7 @@ function App() {
             : null
         }
 
+        {/* Select Table when choose foreign key for field */}
         <Modal opened={tableListOfForeignKeys.length > 0} onClose={() => setForeignKeyOptions([])} title="Edit Field">
           <div className="flex flex-col gap-3">
             <Select
@@ -971,6 +1080,40 @@ function App() {
           </div>
         </Modal>
 
+        {/* Select Table when choose foreign key for drawflow node connection */}
+        {nodeForeignKeyEditDialgoue ? <Modal opened={nodeForeignKeyEditDialgoue != null} onClose={() => { setNodeForeignKeyEditDialogue(null); setTables(prev => [...prev]) }} title="Choose Field to Connect to Table">
+          <div className="flex flex-col gap-3">
+            <Select
+              placeholder="Foreign Key to Table"
+              label="Foreign Key"
+              description="Select the table to connect to"
+              value={foreignkeySelected}
+              onChange={(key) => setForeignkeySelected(key)}
+              data={nodeForeignKeyEditDialgoue.fields.map(f => f.name)}
+            />
+            <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={() => {
+              setTables(prev => {
+                if (foreignkeySelected) {
+                  const { tableIndex, tableToConnect: tablename } = nodeForeignKeyEditDialgoue;
+                  const fields = prev[tableIndex].fields
+                  const fieldIndex = fields.findIndex(f => f.name == foreignkeySelected);
+                  prev[tableIndex].fields[fieldIndex].foreignkey = tablename;
+                }
+                return [...prev];
+              })
+              if (foreignkeySelected) {
+                notifications.show({
+                  title: "Tables connected",
+                  message: `Connected tables succesfully`,
+                  color: "green", position: "top-right",
+                  icon: <MdCheck />
+                });
+              }
+              setForeignkeySelected("");
+              setNodeForeignKeyEditDialogue(null);
+            }}>Set Foreign Key</Button>
+          </div>
+        </Modal> : null}
 
 
         <footer className='w-full h-8 fixed bottom-0 left-0 bg-gray-700 flex flex-col p-2 justify-center items-start  z-10'>

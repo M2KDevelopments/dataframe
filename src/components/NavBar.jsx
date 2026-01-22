@@ -35,7 +35,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
             return notifications.show({
                 title: "Invalid Table Name",
                 message: "Please enter a valid table name",
-                color: "orange",
+                color: "orange", position:"top-right",
                 icon: <MdWarning />
             })
         } 
@@ -65,7 +65,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                 return notifications.show({
                     title: "Invalid Project Name",
                     message: "Please enter a valid project name. ",
-                    color: "orange",
+                    color: "orange", position:"top-right",
                     icon: <MdWarning />
                 })
             } 
