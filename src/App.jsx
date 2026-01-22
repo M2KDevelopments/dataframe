@@ -236,8 +236,17 @@ function App() {
             <span class="font-thin text-xs">${field.autoincrement ? " AUTOINCREMENT" : ""}</span>
           </p>
           <hr/>
-          `
+        `
         ).join("\n")}
+        ${table.timestamp ? `
+            ${['createdAt', 'updatedAt'].map(name =>
+            `<p class="text-sm"> 
+              <span class="font-bold">${name}</span>
+              <span class="font-thin text-xs">timestamp</span>
+            </p>
+            <hr/>
+            `).join('\n')}
+            `: ''}
           </div>
         </details>
       `;
@@ -983,6 +992,19 @@ function App() {
                           }
                         </DragOverlay>
                       </DndContext>
+                      {/* Show Time Stamps */}
+                      {table.timestamp ? ["createdAt", "updatedAt"].map((name, i) =>
+                        <DataField
+                          key={table.name + "timestamp" + i}
+                          field={{ name: name, type: "DateAndTime", foreignkey: "", primary: false, max: "", min: "", autoincrement: false }}
+                          isTimestamp={true}
+                          dragId={null}
+                          dragOverlay={null}
+                          fieldindex={-1}
+                          selectedFieldsSet={new Set()}
+                          table={table}
+                        />
+                      ) : null}
                     </Accordion.Panel>
                   </Accordion.Item>
                 )}
