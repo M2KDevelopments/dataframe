@@ -38,3 +38,10 @@ Data Frame is a free open source project to quickly visualize database tables an
 ## License
 
 See LICENSE file for details.
+
+
+## Support (from Malawi or USA)
+<a href="https://give.paychangu.com/dc-RqLWVw" target="_blank">
+    <img src="https://firebasestorage.googleapis.com/v0/b/paychangu-dbdaa.firebasestorage.app/o/assets%2Ftag2.png?alt=media&token=c832d3ce-9ff6-4c40-bf54-705bb1fb9fec"alt="Support me directly" style="height: 60px !important;width: 217px !important;"/>
+</a>
+
