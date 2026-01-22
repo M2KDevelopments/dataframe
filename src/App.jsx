@@ -3,13 +3,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 // Components
 import DataField from './components/DataField';
 import NavBar from './components/NavBar'
-import FIELD_TYPES from './assets/fieldtypes.json';
+import FIELD_TYPES from './assets/datatypes.json';
 
 // UI Library
 import swal from 'sweetalert';
 import { MdCheck, MdWarning } from 'react-icons/md';
-import { ArrowDown01, Clock, ClockAlertIcon, ClockArrowUp, Edit2, EditIcon, KeyRound, Lightbulb, LightbulbOff, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
-import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Modal, Switch, Alert, Badge } from '@mantine/core';
+import { ArrowDown01, Clock, ClockAlertIcon, ClockArrowUp, Edit2, EditIcon, KeyRound, Maximize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
+import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Tooltip, Select, NumberInput, Divider, Modal, Switch, Alert, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
@@ -38,8 +38,6 @@ const DEFAULT_FIELD = {
   min: "",
   max: "",
 }
-
-
 
 
 function App() {

@@ -1,6 +1,6 @@
 import { ArrowDown01, Edit2, GripVertical, KeyRound, Sparkle, Trash2 } from 'lucide-react';
 import { ActionIcon, Input, Tooltip, Checkbox, Chip } from '@mantine/core';
-import FIELD_TYPES from '../assets/fieldtypes.json';
+import FIELD_TYPES from '../assets/datatypes.json';
 import { useSortable } from '@dnd-kit/sortable';
 
 const mapFieldTypes = new Map();
