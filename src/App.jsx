@@ -8,8 +8,8 @@ import FIELD_TYPES from './assets/fieldtypes.json';
 // UI Library
 import swal from 'sweetalert';
 import { MdCheck, MdWarning } from 'react-icons/md';
-import { ArrowDown01, Clock, Edit2, EditIcon, KeyRound, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
-import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Modal, Switch, Alert } from '@mantine/core';
+import { ArrowDown01, Clock, ClockAlertIcon, ClockArrowUp, Edit2, EditIcon, KeyRound, Lightbulb, LightbulbOff, Maximize2Icon, Minimize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
+import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Group, Tooltip, Select, NumberInput, Divider, Modal, Switch, Alert, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
@@ -240,7 +240,7 @@ function App() {
         ).join("\n")}
         ${table.timestamp ? `
             ${['createdAt', 'updatedAt'].map(name =>
-            `<p class="text-sm"> 
+          `<p class="text-sm"> 
               <span class="font-bold">${name}</span>
               <span class="font-thin text-xs">timestamp</span>
             </p>
@@ -369,6 +369,15 @@ function App() {
   const onTableTimestamp = useCallback(async (index) => {
     tables[index].timestamp = !tables[index].timestamp;
     setTables([...tables]);
+    const on = tables[index].timestamp;
+
+    notifications.show({
+      title: `Timestamps ${on ? "Set" : "Removed"}`,
+      message: `${tables[index].name} has timestamps turned ${on ? "ON" : "OFF"}`,
+      color: "green",
+      position: "top-right",
+      icon: on ? <ClockArrowUp /> : <ClockAlertIcon />
+    });
   }, [tables]);
 
   const onRenameTable = useCallback(async (index) => {
@@ -879,34 +888,33 @@ function App() {
               <Accordion chevronPosition="left" variant="contained" radius="md" defaultValue="">
                 {filteredTables.map((table) =>
                   <Accordion.Item key={table.name} value={table.name}>
-                    <Accordion.Control icon={
-                      <Group>
+                    <Accordion.Control>
+                      <div className='grid grid-cols-2'>
+                        <div className='w-full flex items-center gap-2'>
+                          <Badge color="teal" size='xs'>{table.fields.length.toString()}</Badge>
+                          {table.name}
+                        </div>
+                        <div className='w-full gap-2 flex justify-center items-center'>
 
-                        <Tooltip label="Table should have Timestamp?">
-                          <ActionIcon onClick={() => onTableTimestamp(table.index)} variant={table.timestamp ? 'filled' : 'outline'} color='teal' radius="lg">
-                            <Clock size={14} />
-                          </ActionIcon>
-                        </Tooltip>
+                          <Tooltip label="Table should have Timestamp?">
+                            <div className={`border ${table.timestamp ? 'border-teal-500' : 'border-gray-500'} rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onTableTimestamp(table.index)}>
+                              <Clock size={14} color={table.timestamp ? 'teal' : undefined} />
+                            </div>
+                          </Tooltip>
 
-                        <Tooltip label={`Rename Table`}>
-                          <ActionIcon onClick={() => onRenameTable(table.index)} variant="outline" color="dark" radius="lg">
-                            <Edit2 size={16} />
-                          </ActionIcon>
-                        </Tooltip>
+                          <Tooltip label={`Rename Table`}>
+                            <div className={`border border-gray-500 rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onRenameTable(table.index)} >
+                              <Edit2 size={14} />
+                            </div>
+                          </Tooltip>
 
-                        <Tooltip label={`Remove ${table.name}`}>
-                          <ActionIcon onClick={() => onRemoveTable(table)} variant="outline" color="dark" radius="lg">
-                            <Trash2 size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-
-
-                      </Group>
-                    }>
-                      <Group>
-                        <Table color="teal" size={16} />
-                        {table.name} ({table.fields.length.toString()})
-                      </Group>
+                          <Tooltip label={`Remove ${table.name}`}>
+                            <div className={`border border-gray-500 rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onRemoveTable(table)} >
+                              <Trash2 size={14} />
+                            </div>
+                          </Tooltip>
+                        </div>
+                      </div>
                     </Accordion.Control>
                     <Accordion.Panel>
                       <div className="flex gap-2 items-center">
@@ -963,8 +971,9 @@ function App() {
                         >
                           {table.fields.map((field, fieldindex) =>
                             <DataField
-                              field={field}
+                              key={`${table.index}-${fieldindex}`}
                               dragId={`${table.index}-${fieldindex}`}
+                              field={field}
                               dragOverlay={null}
                               fieldindex={fieldindex}
                               table={table}
