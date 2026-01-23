@@ -18,6 +18,7 @@
     "@mantine/dropzone": "^8.3.13",
     "@mantine/hooks": "^8.3.13",
     "@mantine/notifications": "^8.3.13",
+    "@reactour/tour": "^3.8.0",
     "@tailwindcss/vite": "^4.1.18",
     "drawflow": "^0.0.60",
     "lucide-react": "^0.536.0",

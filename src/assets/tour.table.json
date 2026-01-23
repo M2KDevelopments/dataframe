@@ -1,0 +1,71 @@
+[
+  {
+    "x": 628,
+    "y": 300,
+    "opened": true,
+    "name": "Schools",
+    "timestamp": true,
+    "fields": [
+      {
+        "name": "id",
+        "type": "text",
+        "unique": false,
+        "primarykey": true,
+        "autoincrement": false,
+        "foreignkey": "",
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "userId",
+        "type": "text",
+        "unique": false,
+        "primarykey": false,
+        "autoincrement": false,
+        "foreignkey": "Users",
+        "min": "",
+        "max": ""
+      }
+    ]
+  },
+  {
+    "x": 132,
+    "y": 153,
+    "opened": true,
+    "name": "Users",
+    "timestamp": false,
+    "fields": [
+      {
+        "name": "id",
+        "type": "text",
+        "unique": false,
+        "primarykey": true,
+        "autoincrement": false,
+        "foreignkey": "",
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "unique": false,
+        "primarykey": false,
+        "autoincrement": false,
+        "foreignkey": "",
+        "min": "",
+        "max": ""
+      },
+      {
+        "name": "email",
+        "type": "text",
+        "unique": true,
+        "primarykey": false,
+        "autoincrement": false,
+        "foreignkey": "",
+        "min": "",
+        "max": ""
+      }
+    ],
+    "index": "1"
+  }
+]

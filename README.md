@@ -1,4 +1,14 @@
 # Data Frame
+<img src="./public/screenshot.png" height="200">
+
+![Static Badge](https://img.shields.io/badge/m2kdevelopments-purple?style=plastic&logo=github&logoColor=purple&label=developer&link=https%3A%2F%2Fgithub.com%2Fm2kdevelopments)
+![Static Badge](https://img.shields.io/badge/MIT-green?style=plastic&logo=license&logoColor=green&label=license)
+![Static Badge](https://img.shields.io/badge/buy_me_a_coffee-yellow?style=plastic&logo=buymeacoffee&logoColor=yellow&label=support&link=https%3A%2F%2Fwww.buymeacoffee.com%2Fm2kdevelopments)
+![Static Badge](https://img.shields.io/badge/paypal-blue?style=plastic&logo=paypal&logoColor=blue&label=support&link=https%3A%2F%2Fpaypal.me%2Fm2kdevelopment)
+![Static Badge](https://img.shields.io/badge/latest-blue?style=plastic&logo=react&logoColor=blue&label=reactjs&link=https%3A%2F%2Fgithub.com%2Fm2kdevelopments)
+![Static Badge](https://img.shields.io/badge/latest-gold?style=plastic&logo=vite&logoColor=gold&label=vite)
+![Static Badge](https://img.shields.io/badge/docker-blue?style=plastic&logo=docker&logoColor=blue&label=build_tool&link=https%3A%2F%2Fgithub.com%2Fm2kdevelopments)
+
 
 Data Frame is a free open source project to quickly visualize database tables and export code to the relational database or ORM of choice.
 

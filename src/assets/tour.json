@@ -1,0 +1,49 @@
+[
+  {
+    "content": "👋 Welcome to DataFrame! Let's get you settled in.",
+    "position": "center",
+    "selector": "body"
+  },
+  {
+    "content": "📝 DataFrame helps you write schemas and 📊 visualize your database structure.",
+    "position": "center",
+    "selector": "body"
+  },
+  {
+    "content": "🛠️ This button right here opens the side panel for you to edit all your tables. Go ahead and click the button.",
+    "selector": ".tour-schema"
+  },
+  {
+    "content": "➕ This is where you create your tables. Enter 'Users' in the textbox and then click 'Add Table'.",
+    "selector": ".tour-create-table"
+  },
+  {
+    "content": "🔍 If you have many tables and you need to search, you can do it right here.",
+    "selector": ".tour-search-table"
+  },
+  {
+    "content": "🗂️ This section is where all your tables and fields are listed.",
+    "selector": ".tour-tables"
+  },
+  {
+    "content": "⚙️ This is the menu section to help you save, import, export, and more.",
+    "selector": ".tour-nav"
+  },
+  {
+    "content": "🔍 Use these if you need to zoom in or out of the canvas.",
+    "selector": ".tour-zoom"
+  },
+  {
+    "content": "❤️ These are our support links. Click any of the links to help support our developers!",
+    "selector": ".tour-support"
+  },
+  {
+    "content": "💡 If you need to go through the tour again at any time, you can find me right here.",
+    "selector": ".tour-help"
+  },
+  {
+    "content": "🚀 There you have it! Have a great time using DataFrame.",
+    "position": "center",
+    "selector": "body"
+  }
+]

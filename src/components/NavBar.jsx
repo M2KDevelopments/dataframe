@@ -18,13 +18,14 @@ import { Dropzone } from '@mantine/dropzone';
 import ALLFORMATS from '../assets/codetypes.json';
 import { getDrizzleFrom, getMongoose, getPrismaFrom, getSQLFrom } from '../helpers/transpiler';
 import { parseDataFrameFile } from '../helpers/parser';
-
+import { useTour } from '@reactour/tour';
+import tourguide from '../assets/tour.json';
 
 const width = 200;
 
 function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) {
 
-
+    const { setIsOpen, setSteps, setCurrentStep } = useTour();
     const [loading, setLoading] = useState(false);
     const [url, setURL] = useState('');
     const [activeCodeTab, setActiveCodeTab] = useState(0);
@@ -321,7 +322,8 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                     icon: <MdWarning />
                 })
             }
-            setProjectName(name)
+            setProjectName(name);
+            setTables([]);
         }
 
         const saveAs = async () => {
@@ -419,6 +421,9 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                 window.open('https://github.com/M2KDevelopments/dataframe', '_blank');
                 break;
             case "tour":
+                setCurrentStep(0);
+                setSteps(tourguide)
+                setIsOpen(true);
                 break;
             case "terms":
                 window.open('/terms', '_blank');
@@ -434,8 +439,8 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
     return (
         <header className='w-full h-10 bg-cyan-900 shadow-2xl fixed top-0 left-0 z-10'>
             <nav className='flex gap-2 px-2 items-center'>
-                <div className='flex gap-2 px-2 items-center'>
-                    <ActionIcon variant="filled" radius="md" size="lg" color='#104e64' onClick={openDrawer}>
+                <div className='tour-nav flex gap-2 px-2 items-center'>
+                    <ActionIcon className='tour-schema' variant="filled" radius="md" size="lg" color='#104e64' onClick={openDrawer}>
                         <PanelRight size={18} />
                     </ActionIcon>
 
@@ -483,7 +488,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
 
                     <Menu shadow="md" width={width}>
                         <Menu.Target>
-                            <Button variant='subtle' color='#b3f1df' size='xs'>Help</Button>
+                            <Button className="tour-help" variant='subtle' color='#b3f1df' size='xs'>Help</Button>
                         </Menu.Target>
 
                         <Menu.Dropdown>
@@ -498,7 +503,9 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                     </Menu>
                 </div>
 
-                <div className='flex w-full items-center justify-end gap-3 px-4'>
+                <div className="w-full"></div>
+
+                <div className='tour-support flex items-center justify-end gap-3 px-4'>
                     <Tooltip label="Support me on Paychangu">
                         <ActionIcon variant="subtle" radius="lg" size="md" color='white' onClick={() => window.open('https://give.paychangu.com/dc-RqLWVw', '_blank')}>
                             <FaMoneyBillWave size={18} />
