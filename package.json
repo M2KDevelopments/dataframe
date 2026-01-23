@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build-chrome-extension": "vite build && copyfiles -f dist/chrome_extension/manifest.json dist/ && rimraf dist/chrome_extension",
     "lint": "eslint .",
     "preview": "vite preview",
     "fileserver": "nodemon ./example/app.js"
@@ -34,6 +35,7 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react-swc": "^4.2.2",
+    "copyfiles": "^2.4.1",
     "cors": "^2.8.6",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
@@ -41,6 +43,7 @@
     "express": "^5.2.1",
     "globals": "^16.5.0",
     "nodemon": "^3.1.11",
+    "rimraf": "^6.1.2",
     "vite": "^7.2.4"
   }
 }

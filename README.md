@@ -12,6 +12,10 @@
 
 Data Frame is a free open source project to quickly visualize database tables and export code to the relational database or ORM of choice.
 
+<a href="https://chromewebstore.google.com/detail/aielkbgkdckfdpkppagaagbhialpkiok" target="_blank">
+   <img src="./public/chromestore.png" width="300"/>
+</a>
+
 ## Features
 
 - Visualize database table structures
@@ -43,6 +47,11 @@ Data Frame is a free open source project to quickly visualize database tables an
 3. Start the development server:
    ```bash
    npm run dev
+   ```
+
+4. Build Chrome Extension Version:
+   ```bash
+   npm run build-chrome-extension
    ```
 
 ## License

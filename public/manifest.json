@@ -1,6 +1,6 @@
 {
   "name": "Data Frame",
-  "short_name": "Data Frame",
+  "short_name": "Data Frame: Visualize your Database",
   "description": "Data Frame is a free open source project to quickly visualize database tables and export code to the relational database or ORM of choice",
   "start_url": "/",
   "scope": "/",

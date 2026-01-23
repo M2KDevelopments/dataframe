@@ -3,6 +3,8 @@ import { useTour } from '@reactour/tour'
 import tourguide from '../assets/tour.json';
 import { Button, Modal } from '@mantine/core';
 import { HelpCircle } from 'lucide-react';
+import promo from '../assets/promo.jpg';
+
 
 function FirstTime() {
 
@@ -22,8 +24,8 @@ function FirstTime() {
 
     return (
         <Modal size="lg" opened={firstTime} onClose={onClose} title="Welcome to Data Frame">
-            <img className="w-full" src="/promo.jpg"/>
-            
+            <img className="w-full" src={promo} />
+
             <p className='my-6'>Data Frame is a free open source project to quickly visualize database tables and export code to the relational database or ORM of choice</p>
 
             <div className='grid grid-cols-2'>
