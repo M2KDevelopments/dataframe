@@ -9,7 +9,7 @@ import tourguide from './assets/tour.json';
 import swal from 'sweetalert';
 import { TourProvider } from '@reactour/tour'
 import { MdCheck, MdWarning } from 'react-icons/md';
-import { ArrowDown01, Clock, ClockAlertIcon, ClockArrowUp, Edit2, EditIcon, KeyRound, Maximize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
+import { ArrowDown01, Clock, ClockAlertIcon, ClockArrowUp, Edit2, EditIcon, HelpCircle, KeyRound, Maximize2Icon, Plus, RefreshCw, SearchIcon, Sparkle, Table, Trash2, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Tooltip, Select, NumberInput, Divider, Modal, Switch, Alert, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
@@ -45,6 +45,7 @@ import Drawflow from 'drawflow'
 import 'drawflow/dist/drawflow.min.css';
 import './drawflow.css';
 import { getProject } from './helpers/memory';
+import FirstTime from './components/FirstTime';
 
 
 const DEFAULT_FIELD = {
@@ -60,6 +61,7 @@ const DEFAULT_FIELD = {
 
 
 function App() {
+
 
   const [currentStep, setCurrentStep] = useState(0);
   const [projectName, setProjectName] = useState("DataFrame")
@@ -1179,6 +1181,9 @@ function App() {
             </Modal> : null}
 
 
+            <FirstTime />
+
+            
             <footer className='w-full h-8 fixed bottom-0 left-0 bg-gray-700 flex flex-col p-2 justify-center items-start  z-10'>
               <div className="flex w-full items-center">
                 <p className='text-xs text-white text-start px-4 w-full'>Data Frame</p>
