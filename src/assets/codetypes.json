@@ -1,9 +1,4 @@
 [
     "json",
-    "df",
-    "sql",
-    "prisma",
-    "drizzle",
-    "ts",
-    "js"
+    "df"
 ]

@@ -12,11 +12,11 @@ import { ArrowDown01, Clock, ClockAlertIcon, ClockArrowUp, Edit2, EditIcon, KeyR
 import { MantineProvider, Drawer, Button, ActionIcon, Input, Accordion, Tooltip, Select, NumberInput, Divider, Modal, Switch, Alert, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
+import { CodeHighlightAdapterProvider, createShikiAdapter } from '@mantine/code-highlight';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/code-highlight/styles.css';
 import '@mantine/dropzone/styles.css';
-import { CodeHighlightAdapterProvider, createShikiAdapter } from '@mantine/code-highlight';
 
 
 // Shiki requires async code to load the highlighter

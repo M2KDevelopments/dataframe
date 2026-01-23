@@ -21,69 +21,69 @@ export function fileDetector(text) {
 export function parseDataFrameFile(text) {
     try {
         const json = JSON.parse(text);
-        if (!Array.isArray(json)) return [];
+        if (!Array.isArray(json)) return null
         for (const item of json) {
             if (item['timestamp'] == undefined) {
                 //console.log('No timestamp')
-                return [];
+                return null
             }
 
             if (typeof item['timestamp'] != 'boolean') {
                 //console.log('No timestamp')
-                return [];
+                return null
             }
 
             if (!item['name']) {
                 //console.log('No name')
-                return [];
+                return null
             }
 
             if (typeof item['name'] != 'string') {
                 //console.log('No name')
-                return [];
+                return null
             }
 
             if (!item['fields']) {
                 //console.log('No fields')
-                return [];
+                return null
             }
 
             if (!Array.isArray(item['fields'])) {
                 //console.log('Fields is not an array')
-                return [];
+                return null
             }
 
             for (const field of item['fields']) {
                 if (!field['name']) {
                     //console.log('No field name')
-                    return [];
+                    return null
                 }
 
                 if (typeof field['name'] != 'string') {
                     //console.log('No field name')
-                    return [];
+                    return null
                 }
 
                 if (!field['type']) {
                     //console.log('No field type')
-                    return [];
+                    return null
                 }
 
                 if (typeof field['type'] != 'string') {
                     //console.log('No field type')
-                    return [];
+                    return null
                 }
 
 
                 if (field['foreignkey'] == undefined || field['foreignkey'] == null) {
                     //console.log('No field foreignkey')
-                    return [];
+                    return null
                 }
 
                 if (typeof field['foreignkey'] != 'string') {
                     //console.log(field)
                     //console.log('No field foreignkey')
-                    return [];
+                    return null
                 }
             }
 
@@ -92,9 +92,9 @@ export function parseDataFrameFile(text) {
             if (item['y'] == undefined) item['y'] = 90;
         }
 
-        return json;
+        return json.sort((a, b) => a.name.localeCompare(b.name));
     } catch (e) {
         console.warn('JSON Parse Error', e.message);
-        return [];
+        return null;
     }
 }

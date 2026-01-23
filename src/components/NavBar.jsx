@@ -1,11 +1,11 @@
 import swal from 'sweetalert';
-import { ActionIcon, Button, FileButton, Input, Menu, Modal, Tooltip, Alert } from '@mantine/core';
-import { Copy, Download, File, GroupIcon, HelpCircleIcon, Image, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon, Share2Icon, Undo2Icon, Upload, X } from 'lucide-react';
-import { FaCcPaypal, FaGithub, FaMoneyBillWave, FaPaypal, FaSave } from 'react-icons/fa';
+import { ActionIcon, Button, Input, Menu, Modal, Tooltip, Alert } from '@mantine/core';
+import { Download, HelpCircleIcon, PanelRight, Upload, X } from 'lucide-react';
+import { FaGithub, FaMoneyBillWave, FaPaypal, FaSave } from 'react-icons/fa';
 import { BsCode, BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
 import { SiBuymeacoffee, SiDrizzle, SiMongodb, SiPrisma } from 'react-icons/si';
 import { notifications } from '@mantine/notifications';
-import { MdCheck, MdDownload, MdSupport, MdWarning } from 'react-icons/md';
+import { MdCheck, MdDownload, MdWarning } from 'react-icons/md';
 import { saveProject } from '../helpers/memory'
 import { useMemo, useState } from 'react';
 import { CodeHighlightControl, CodeHighlightTabs } from '@mantine/code-highlight';
@@ -17,7 +17,7 @@ import { Dropzone } from '@mantine/dropzone';
 
 import ALLFORMATS from '../assets/codetypes.json';
 import { getDrizzleFrom, getMongoose, getPrismaFrom, getSQLFrom } from '../helpers/transpiler';
-import { fileDetector, parseDataFrameFile } from '../helpers/parser';
+import { parseDataFrameFile } from '../helpers/parser';
 
 
 const width = 200;
@@ -67,24 +67,6 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
         reader.readAsText(f);
     })
 
-    const parseFile = (format, content) => {
-        const tables = [];
-        switch (format) {
-            case "df":
-            case "json":
-                return parseDataFrameFile(content);
-            case "sql":
-                break;
-            case "prisma":
-                break;
-            case "mongo":
-                break;
-            case "drizzle":
-                break;
-        }
-        return tables;
-    }
-
     /**
      * @param {File | null} f 
      */
@@ -101,9 +83,17 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                 icon: <MdWarning />
             })
         }
-        const format = ALLFORMATS.find(name => f.name.toLowerCase().includes(`.${name}`));
         const content = await readFile(f);
-        const tablelist = parseFile(format, content);
+        const tablelist = parseDataFrameFile(content);
+        if (!tablelist) {
+            return notifications.show({
+                title: "Uploading Error",
+                message: "Could read tables and fields from file",
+                color: "orange",
+                position: "top-right",
+                icon: <MdWarning />
+            })
+        }
         setTables(tablelist);
         setProjectName(f.name.replace(/\..*/, '').trim())
         notifications.show({
@@ -119,7 +109,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
         const allowedFiles = files.filter(f =>
             ALLFORMATS.some(name => f.name.toLowerCase().includes(`.${name}`))
         )
-        if (!allowedFiles.length) {
+        if (allowedFiles.length == 0) {
             return notifications.show({
                 title: "Uploading Error",
                 message: 'All the files have invalid formats',
@@ -129,15 +119,53 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
             })
         }
 
-
+        const tableNameMap = new Set();
+        for (const table of tables) tableNameMap.add(table.name);
+        const extratables = [];
         for (const f of allowedFiles) {
-            const format = ALLFORMATS.find(name => f.name.toLowerCase().includes(`.${name}`));
             const content = await readFile(f);
-            parseFile(format, content);
+            const tablelist = parseDataFrameFile(content);
+            if (!tablelist) {
+                return notifications.show({
+                    title: "Uploading Error",
+                    message: "Could read tables and fields from file",
+                    color: "orange",
+                    position: "top-right",
+                    icon: <MdWarning />
+                })
+            }
+            extratables.push(...tablelist);
+        }
+
+        // Check for existing tables
+        const existsalready = extratables.filter(t => tableNameMap.has(t.name));
+        const addedTables = extratables.filter(t => !tableNameMap.has(t.name));
+        if (existsalready.length > 0) {
+            for (const { name } of existsalready) {
+                notifications.show({
+                    title: `Table ${name} exists`,
+                    message: `${name} already exists. This won't be included`,
+                    color: "gray",
+                    position: "top-right",
+                    icon: <MdWarning />
+                })
+            }
+        }
+
+
+        if (addedTables.length > 0) {
+            setTables(prev => [...prev, ...addedTables].sort((a, b) => a.name.localeCompare(b.name)));
+            notifications.show({
+                title: "Added Tables",
+                message: `Added ${addedTables.length} ${addedTables.length == 1 ? "Table" : "Tables"}`,
+                color: "green",
+                position: "top-right",
+                icon: <MdCheck />
+            })
         }
     }
 
-    const onOpenUrl = async (url) => {
+    const onOpenUrl = async (url, addToTableList = false) => {
         try {
             setLoading(true);
             if (!url.trim()) return;
@@ -154,10 +182,50 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                     icon: <MdWarning />
                 })
             }
-            const filetype = fileDetector(text);
-            const list = parseFile(filetype, text);
+            // const filetype = fileDetector(text);
+            const list = parseDataFrameFile(text);
+            if (!list) {
+                return notifications.show({
+                    title: "Uploading Error",
+                    message: "Could read tables and fields from file",
+                    color: "orange",
+                    position: "top-right",
+                    icon: <MdWarning />
+                })
+            }
             setProjectName("Dataframe")
-            setTables(list);
+            if (addToTableList) {
+                const set = new Set();
+                for (const table of tables) set.add(table.name);
+                const exists = list.filter(table => set.has(table.name));
+                const added = list.filter(table => !set.has(table.name));
+                if (exists.length > 0) {
+                    for (const { name } of exists) {
+                        notifications.show({
+                            title: `Table ${name} exists`,
+                            message: `${name} already exists. This won't be included`,
+                            color: "gray",
+                            position: "top-right",
+                            icon: <MdWarning />
+                        })
+                    }
+                }
+
+                if (added.length > 0) {
+                    setTables(prev => [...prev, ...added].sort((a, b) => a.name.localeCompare(b.name)));
+                    notifications.show({
+                        title: "Added Tables",
+                        message: `Added ${added.length} ${added.length == 1 ? "Table" : "Tables"}`,
+                        color: "green",
+                        position: "top-right",
+                        icon: <MdCheck />
+                    })
+                }
+
+
+            } else {
+                setTables(list);
+            }
             notifications.show({
                 title: "Loaded Data",
                 message: "Loaded project from url",
@@ -284,7 +352,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                     })
                 }
             }
-            onDownloadCode({ name: `${name || projectName}.df`, code: codeJSON, type: "application/json;charset=utf-8" })
+            onDownloadCode({ name: `${name || projectName}.json`, code: codeJSON, type: "application/json;charset=utf-8" })
             notifications.show({
                 title: "Project Saved",
                 message: `Successfully save ${projectName} in your downloads folder`,
@@ -454,7 +522,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
             <Modal size="lg" opened={openDialogue || importDialogue} onClose={() => { setOpenDialogue(false); setImportDialogue(false) }} title={openDialogue ? "Open Project" : "Import Tables"}>
                 <div className='flex items-center w-full my-4'>
                     <Input disabled={loading} value={url} onChange={e => setURL(e.target.value)} className='w-[80%]' placeholder="URL to file e.g https://dataframe.m2kdevelopments.com/example.json" type="url" />
-                    <Button disabled={loading} variant='outline' color="teal" onClick={() => onOpenUrl(url)}>Load URL</Button>
+                    <Button disabled={loading} variant='outline' color="teal" onClick={() => onOpenUrl(url, importDialogue)}>Load URL</Button>
                 </div>
 
                 <Dropzone
@@ -467,6 +535,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                         icon: <MdWarning />
                     })}
                     multiple={importDialogue}
+                    accept={["application/json"]}
                     maxSize={5 * 1024 ** 2}
                 >
                     <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
@@ -477,12 +546,12 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                             <X size={52} color="gray" />
                         </Dropzone.Reject>
                         <Dropzone.Idle>
-                            <File size={52} color="gray" />
+                            <BsFiletypeJson size={52} color="gray" />
                         </Dropzone.Idle>
 
                         <div>
                             <Text size="xl" inline>
-                                Drag schema files here or click to select files
+                                Drag DataFrame json file(s) here or click to select file
                             </Text>
                             <Text size="sm" c="dimmed" inline mt={7}>
                                 {importDialogue ?
@@ -490,17 +559,6 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                                     :
                                     "Attach as many file as you like, each file should not exceed 5mb"
                                 }
-                            </Text>
-                            <Text size="xs" c="dimmed" inline mt={7}>
-                                <span className='flex gap-3 p-3'>
-                                    {[
-                                        <BsFiletypeSql size={30} />,
-                                        <SiPrisma size={30} />,
-                                        <SiDrizzle size={30} />,
-                                        <SiMongodb size={30} />,
-                                        <BsFiletypeJson size={30} />,
-                                    ].map((icon, i) => <span key={i}>{icon}</span>)}
-                                </span>
                             </Text>
                         </div>
                     </Group>
@@ -549,7 +607,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                                     type: "application/js;charset=utf-8"
                                 },
                                 {
-                                    name: `${projectName}.df`,
+                                    name: `${projectName}.json`,
                                     code: codeJSON,
                                     type: "application/json;charset=utf-8"
                                 }
