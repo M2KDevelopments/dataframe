@@ -5,7 +5,7 @@ import { FaCcPaypal, FaGithub, FaMoneyBillWave, FaPaypal, FaSave } from 'react-i
 import { BsCode, BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
 import { SiBuymeacoffee, SiDrizzle, SiMongodb, SiPrisma } from 'react-icons/si';
 import { notifications } from '@mantine/notifications';
-import { MdCheck, MdSupport, MdWarning } from 'react-icons/md';
+import { MdCheck, MdDownload, MdSupport, MdWarning } from 'react-icons/md';
 import { saveProject } from '../helpers/memory'
 import { useMemo, useState } from 'react';
 import { CodeHighlightControl, CodeHighlightTabs } from '@mantine/code-highlight';
@@ -166,6 +166,44 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
             setProjectName(name)
         }
 
+        const saveAs = async () => {
+            const name = await swal({
+                title: `Save Project`,
+                text: `The file will save in your downloads folder`,
+                icon: "info",
+                buttons: ['Cancel', 'Save'],
+                content: {
+                    element: "input",
+                    attributes: {
+                        value: projectName,
+                        placeholder: "Enter the name of the project e.g DataFrame",
+
+                    }
+                }
+            })
+
+            if (name == undefined || name == null) return;
+            if (name != '' && name.trim()) return;
+            if (name != '') {
+                if (!'qwertyuiopasdfghjklzxcvbnm1234567890-_'.split("").some(char => char == name[0].toLowerCase())) {
+                    return notifications.show({
+                        title: "Invalid Project Name",
+                        message: "Please enter a valid project name. ",
+                        color: "orange", position: "top-right",
+                        icon: <MdWarning />
+                    })
+                }
+            }
+            onDownloadCode({ name: `${name || projectName}.df`, code: codeJSON, type: "application/json;charset=utf-8" })
+            notifications.show({
+                title: "Project Saved",
+                message: `Successfully save ${projectName} in your downloads folder`,
+                color: "green",
+                position: "top-right",
+                icon: <MdDownload />
+            })
+        }
+
         switch (value) {
             case "open":
                 setOpenDialogue(true);
@@ -181,6 +219,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                 break;
 
             case "saveas":
+                saveAs();
                 break;
 
             case "share":
@@ -255,6 +294,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                             <Menu.Item onClick={() => onFile('open')} rightSection={<span className='text-xs font-thin'>CTRL+O</span>}>Open</Menu.Item>
                             <Menu.Item onClick={() => onFile('new')} rightSection={<span className='text-xs font-thin'>CTRL+N</span>}>New</Menu.Item>
                             <Menu.Item onClick={() => onFile('save')} rightSection={<span className='text-xs font-thin'>CTRL+S</span>}>Save</Menu.Item>
+                            <Menu.Item onClick={() => onFile('saveas')} rightSection={<span className='text-xs font-thin'>CTRL+SHIFT+S</span>}>Save AS File</Menu.Item>
                             <Menu.Item onClick={() => onFile('export')} rightSection={<BsCode size={16} />}>Export</Menu.Item>
                             {/* <Menu.Item onClick={() => onFile('share')} rightSection={<Share2Icon size={16} />}>Share</Menu.Item> */}
                         </Menu.Dropdown>
