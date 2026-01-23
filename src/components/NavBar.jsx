@@ -453,7 +453,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                             <Menu.Item onClick={() => onFile('open')} rightSection={<span className='text-xs font-thin'>CTRL+O</span>}>Open</Menu.Item>
                             <Menu.Item onClick={() => onFile('new')} rightSection={<span className='text-xs font-thin'>CTRL+N</span>}>New</Menu.Item>
                             <Menu.Item onClick={() => onFile('save')} rightSection={<span className='text-xs font-thin'>CTRL+S</span>}>Save</Menu.Item>
-                            <Menu.Item onClick={() => onFile('saveas')} rightSection={<span className='text-xs font-thin'>CTRL+SHIFT+S</span>}>Save AS File</Menu.Item>
+                            <Menu.Item onClick={() => onFile('saveas')} rightSection={<span className='text-xs font-thin'>CTRL+SHIFT+S</span>}>Save As File</Menu.Item>
                             <Menu.Divider />
                             <Menu.Item onClick={() => onFile('import')} rightSection={<Upload size={16} />}>Import</Menu.Item>
                             <Menu.Item onClick={() => onFile('export')} rightSection={<BsCode size={16} />}>Export</Menu.Item>
