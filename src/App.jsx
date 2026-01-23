@@ -879,7 +879,7 @@ function App() {
         <Notifications />
 
         <div className='w-full h-full'>
-          <NavBar projectName={projectName} setProjectName={setProjectName} openDrawer={open} tables={tables} />
+          <NavBar projectName={projectName} setProjectName={setProjectName} openDrawer={open} tables={tables} setTables={setTables} />
 
           <Drawer opened={opened} onClose={close} title={
             <div className='grid grid-cols-2'>

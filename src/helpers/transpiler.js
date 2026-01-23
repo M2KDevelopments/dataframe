@@ -153,7 +153,7 @@ export function getDrizzleFrom(tables) {
 
 export function getMongoose(tables) {
     return `const mongoose = require('mongoose');\n` +
-        `const Schema = mongoose.Schema;` +
+        `const Schema = mongoose.Schema;\n` +
         `` +
         tables.map(table => {
             return `const ${table.name}Schema = new Schema({\n${table.fields

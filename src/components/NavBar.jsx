@@ -13,18 +13,23 @@ import { CodeHighlightControl, CodeHighlightTabs } from '@mantine/code-highlight
 
 // Dropzone
 import { Group, Text } from '@mantine/core';
-import { Dropzone, IMAGE_MIME_TYPE } from '@mantine/dropzone';
+import { Dropzone } from '@mantine/dropzone';
 
 import ALLFORMATS from '../assets/codetypes.json';
 import { getDrizzleFrom, getMongoose, getPrismaFrom, getSQLFrom } from '../helpers/transpiler';
+import { fileDetector, parseDataFrameFile } from '../helpers/parser';
 
 
 const width = 200;
 
-function NavBar({ projectName, setProjectName, openDrawer, tables }) {
+function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) {
 
+
+    const [loading, setLoading] = useState(false);
+    const [url, setURL] = useState('');
     const [activeCodeTab, setActiveCodeTab] = useState(0);
     const [openDialogue, setOpenDialogue] = useState(false);
+    const [importDialogue, setImportDialogue] = useState(false);
     const [exportDialogue, setExportDialogue] = useState(false);
     const { codeSQL, codeDrizzle, codeJSON, codePrisma, codeMongoose } = useMemo(() => {
         return {
@@ -36,40 +41,13 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
         }
     }, [tables]);
 
-
-    /**
-     * @param {File | null} f 
-     */
-    const onOpen = (f) => {
-        if (!f) return;
-
-        // file type check
-        if (!ALLFORMATS.some(name => f.type.toLowerCase().includes(name))) {
-            return notifications.show({
-                title: "Uploading Error",
-                message: "Invalid file type",
-                color: "orange",
-                position: "top-right",
-                icon: <MdWarning />
-            })
-        }
-        const format = ALLFORMATS.find(name => f.type.toLowerCase().includes(name));
+    const readFile = (f) => new Promise((resolve) => {
         const reader = new FileReader(); // Create a new FileReader object
 
         // Define the onload event handler
         reader.onload = function (e) {
             const content = e.target.result; // The file content is in e.target.result
-            console.log(content);
-            switch (format) {
-                case "json":
-                    break;
-                case "sql":
-                    break;
-                case "prisma":
-                    break;
-                case "drizzle":
-                    break;
-            }
+            resolve(content)
         };
 
         // Define the onerror event handler (optional, but good practice)
@@ -82,10 +60,122 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                 position: "top-right",
                 icon: <MdWarning />
             })
+            resolve("");
         };
 
         // Read the file as text
         reader.readAsText(f);
+    })
+
+    const parseFile = (format, content) => {
+        const tables = [];
+        switch (format) {
+            case "df":
+            case "json":
+                return parseDataFrameFile(content);
+            case "sql":
+                break;
+            case "prisma":
+                break;
+            case "mongo":
+                break;
+            case "drizzle":
+                break;
+        }
+        return tables;
+    }
+
+    /**
+     * @param {File | null} f 
+     */
+    const onOpen = async (f) => {
+        if (!f) return;
+
+        // file type check
+        if (!ALLFORMATS.some(name => f.name.toLowerCase().includes(`.${name}`))) {
+            return notifications.show({
+                title: "Uploading Error",
+                message: "Invalid file type",
+                color: "orange",
+                position: "top-right",
+                icon: <MdWarning />
+            })
+        }
+        const format = ALLFORMATS.find(name => f.name.toLowerCase().includes(`.${name}`));
+        const content = await readFile(f);
+        const tablelist = parseFile(format, content);
+        setTables(tablelist);
+        setProjectName(f.name.replace(/\..*/, '').trim())
+        notifications.show({
+            title: "Loaded Data",
+            message: "Loaded " + f.name,
+            color: "green",
+            position: "top-right",
+            icon: <MdDownload />
+        })
+    }
+
+    const onImport = async (files) => {
+        const allowedFiles = files.filter(f =>
+            ALLFORMATS.some(name => f.name.toLowerCase().includes(`.${name}`))
+        )
+        if (!allowedFiles.length) {
+            return notifications.show({
+                title: "Uploading Error",
+                message: 'All the files have invalid formats',
+                color: "orange",
+                position: "top-right",
+                icon: <MdWarning />
+            })
+        }
+
+
+        for (const f of allowedFiles) {
+            const format = ALLFORMATS.find(name => f.name.toLowerCase().includes(`.${name}`));
+            const content = await readFile(f);
+            parseFile(format, content);
+        }
+    }
+
+    const onOpenUrl = async (url) => {
+        try {
+            setLoading(true);
+            if (!url.trim()) return;
+            const headers = { 'Content-Type': 'application/json', }
+            const res = await fetch(url, { method: "GET", headers });
+            const text = await res.text();
+
+            if (text.includes("<pre>Cannot GET /")) {
+                return notifications.show({
+                    title: "Loading File Error",
+                    message: "Could not find content",
+                    color: "orange",
+                    position: "top-right",
+                    icon: <MdWarning />
+                })
+            }
+            const filetype = fileDetector(text);
+            const list = parseFile(filetype, text);
+            setProjectName("Dataframe")
+            setTables(list);
+            notifications.show({
+                title: "Loaded Data",
+                message: "Loaded project from url",
+                color: "green",
+                position: "top-right",
+                icon: <MdDownload />
+            })
+        } catch (e) {
+            notifications.show({
+                title: "Loading File Error",
+                message: e.message,
+                color: "orange",
+                position: "top-right",
+                icon: <MdWarning />
+            })
+        } finally {
+            setLoading(false);
+        }
     }
 
     const onDownloadCode = async ({ name, code, type }) => {
@@ -222,7 +312,8 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                 saveAs();
                 break;
 
-            case "share":
+            case "import":
+                setImportDialogue(true);
                 break;
 
             case "export":
@@ -295,6 +386,8 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                             <Menu.Item onClick={() => onFile('new')} rightSection={<span className='text-xs font-thin'>CTRL+N</span>}>New</Menu.Item>
                             <Menu.Item onClick={() => onFile('save')} rightSection={<span className='text-xs font-thin'>CTRL+S</span>}>Save</Menu.Item>
                             <Menu.Item onClick={() => onFile('saveas')} rightSection={<span className='text-xs font-thin'>CTRL+SHIFT+S</span>}>Save AS File</Menu.Item>
+                            <Menu.Divider />
+                            <Menu.Item onClick={() => onFile('import')} rightSection={<Upload size={16} />}>Import</Menu.Item>
                             <Menu.Item onClick={() => onFile('export')} rightSection={<BsCode size={16} />}>Export</Menu.Item>
                             {/* <Menu.Item onClick={() => onFile('share')} rightSection={<Share2Icon size={16} />}>Share</Menu.Item> */}
                         </Menu.Dropdown>
@@ -358,48 +451,65 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
             </nav>
 
 
-            <Modal size="lg" opened={openDialogue} onClose={() => setOpenDialogue(false)} title="Open Project">
+            <Modal size="lg" opened={openDialogue || importDialogue} onClose={() => { setOpenDialogue(false); setImportDialogue(false) }} title={openDialogue ? "Open Project" : "Import Tables"}>
                 <div className='flex items-center w-full my-4'>
-                    <Input className='w-[80%]' placeholder="URL to file" type="url" />
-                    <Button>Load URL</Button>
+                    <Input disabled={loading} value={url} onChange={e => setURL(e.target.value)} className='w-[80%]' placeholder="URL to file e.g https://dataframe.m2kdevelopments.com/example.json" type="url" />
+                    <Button disabled={loading} variant='outline' color="teal" onClick={() => onOpenUrl(url)}>Load URL</Button>
                 </div>
 
-                <FileButton onChange={(f) => onOpen(f)} accept={ALLFORMATS.map(f => `.${f}, application/${f}, text/x-${f}, text/${f}`).join(',')}>
-                    {(props) => <Button {...props}>Browse Schema File</Button>}
-                </FileButton>
-
-                {/* <Dropzone
-                    onDrop={(files) => console.log('accepted files', files)}
-                    onReject={(files) => console.log('rejected files', files)}
+                <Dropzone
+                    onDrop={(files) => importDialogue ? onImport(files) : onOpen(files[0])}
+                    onReject={(files) => notifications.show({
+                        title: "File Error",
+                        message: `Invalid file ${files.length ? files[0].file.name : ""}`,
+                        color: "red",
+                        position: "top-right",
+                        icon: <MdWarning />
+                    })}
+                    multiple={importDialogue}
                     maxSize={5 * 1024 ** 2}
-                    accept={IMAGE_MIME_TYPE}
                 >
                     <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
                         <Dropzone.Accept>
-                            <Upload size={52} color="var(--mantine-color-blue-6)" stroke={1.5} />
+                            <Upload size={52} color="gray" />
                         </Dropzone.Accept>
                         <Dropzone.Reject>
-                            <X size={52} color="var(--mantine-color-red-6)" stroke={1.5} />
+                            <X size={52} color="gray" />
                         </Dropzone.Reject>
                         <Dropzone.Idle>
-                            <File size={52} color="var(--mantine-color-dimmed)" stroke={1.5} />
+                            <File size={52} color="gray" />
                         </Dropzone.Idle>
 
                         <div>
                             <Text size="xl" inline>
-                                Drag images here or click to select files
+                                Drag schema files here or click to select files
                             </Text>
                             <Text size="sm" c="dimmed" inline mt={7}>
-                                Attach as many files as you like, each file should not exceed 5mb
+                                {importDialogue ?
+                                    "File should not exceed 5mb"
+                                    :
+                                    "Attach as many file as you like, each file should not exceed 5mb"
+                                }
+                            </Text>
+                            <Text size="xs" c="dimmed" inline mt={7}>
+                                <span className='flex gap-3 p-3'>
+                                    {[
+                                        <BsFiletypeSql size={30} />,
+                                        <SiPrisma size={30} />,
+                                        <SiDrizzle size={30} />,
+                                        <SiMongodb size={30} />,
+                                        <BsFiletypeJson size={30} />,
+                                    ].map((icon, i) => <span key={i}>{icon}</span>)}
+                                </span>
                             </Text>
                         </div>
                     </Group>
-                </Dropzone> */}
-                <br />
+                </Dropzone>
+                <br /><br />
 
-                <Alert variant="light" color="orange" title="Opening a new project" icon={<MdWarning />}>
-                    Opening a new project will remove/replace your current project. You probably want to export ${projectName} first.
-                </Alert>
+                {openDialogue ? <Alert variant="light" color="orange" title="Opening a new project" icon={<MdWarning />}>
+                    Opening a new project will remove/replace your current project. You probably want to export <b>{projectName}</b> first.
+                </Alert> : null}
             </Modal>
 
 
@@ -459,7 +569,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                     withBorder={true}
                 />
             </Modal>
-        </header>
+        </header >
     )
 }
 

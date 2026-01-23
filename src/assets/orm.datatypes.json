@@ -6,7 +6,7 @@
         "boolean": "Boolean"
     },
     "sql": {
-        "text": "TEXT",
+        "text": "varchar(255)",
         "int": "INT",
         "float": "REAL",
         "boolean": "BOOLEAN"

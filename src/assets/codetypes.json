@@ -1,1 +1,9 @@
-["json", "sql", "prisma", "drizzle"]
+[
+    "json",
+    "df",
+    "sql",
+    "prisma",
+    "drizzle",
+    "ts",
+    "js"
+]
