@@ -1,17 +1,111 @@
 import swal from 'sweetalert';
-import { ActionIcon, Button, Menu, Tooltip } from '@mantine/core';
-import { GroupIcon, HelpCircleIcon, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon, Share2Icon, Undo2Icon } from 'lucide-react';
+import { ActionIcon, Button, FileButton, Input, Menu, Modal, Tooltip, Alert } from '@mantine/core';
+import { Copy, Download, File, GroupIcon, HelpCircleIcon, Image, LogsIcon, PanelRight, RecycleIcon, Redo2Icon, SaveAllIcon, SaveIcon, Share2Icon, Undo2Icon, Upload, X } from 'lucide-react';
 import { FaCcPaypal, FaGithub, FaMoneyBillWave, FaPaypal, FaSave } from 'react-icons/fa';
-import { BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
-import { SiBuymeacoffee, SiDrizzle, SiPrisma } from 'react-icons/si';
+import { BsCode, BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
+import { SiBuymeacoffee, SiDrizzle, SiMongodb, SiPrisma } from 'react-icons/si';
 import { notifications } from '@mantine/notifications';
 import { MdCheck, MdSupport, MdWarning } from 'react-icons/md';
 import { saveProject } from '../helpers/memory'
+import { useMemo, useState } from 'react';
+import { CodeHighlightControl, CodeHighlightTabs } from '@mantine/code-highlight';
+
+
+// Dropzone
+import { Group, Text } from '@mantine/core';
+import { Dropzone, IMAGE_MIME_TYPE } from '@mantine/dropzone';
+
+import ALLFORMATS from '../assets/codetypes.json';
+import { getDrizzleFrom, getMongoose, getPrismaFrom, getSQLFrom } from '../helpers/transpiler';
+
 
 const width = 200;
 
 function NavBar({ projectName, setProjectName, openDrawer, tables }) {
 
+    const [activeCodeTab, setActiveCodeTab] = useState(0);
+    const [openDialogue, setOpenDialogue] = useState(false);
+    const [exportDialogue, setExportDialogue] = useState(false);
+    const { codeSQL, codeDrizzle, codeJSON, codePrisma, codeMongoose } = useMemo(() => {
+        return {
+            codeSQL: getSQLFrom(tables),
+            codeDrizzle: getDrizzleFrom(tables),
+            codeJSON: JSON.stringify(tables, null, 2),
+            codePrisma: getPrismaFrom(tables),
+            codeMongoose: getMongoose(tables),
+        }
+    }, [tables]);
+
+
+    /**
+     * @param {File | null} f 
+     */
+    const onOpen = (f) => {
+        if (!f) return;
+
+        // file type check
+        if (!ALLFORMATS.some(name => f.type.toLowerCase().includes(name))) {
+            return notifications.show({
+                title: "Uploading Error",
+                message: "Invalid file type",
+                color: "orange",
+                position: "top-right",
+                icon: <MdWarning />
+            })
+        }
+        const format = ALLFORMATS.find(name => f.type.toLowerCase().includes(name));
+        const reader = new FileReader(); // Create a new FileReader object
+
+        // Define the onload event handler
+        reader.onload = function (e) {
+            const content = e.target.result; // The file content is in e.target.result
+            console.log(content);
+            switch (format) {
+                case "json":
+                    break;
+                case "sql":
+                    break;
+                case "prisma":
+                    break;
+                case "drizzle":
+                    break;
+            }
+        };
+
+        // Define the onerror event handler (optional, but good practice)
+        reader.onerror = function (e) {
+            console.error("Error reading file: ", e.target.error);
+            notifications.show({
+                title: "Uploading Error",
+                message: e.target.error,
+                color: "orange",
+                position: "top-right",
+                icon: <MdWarning />
+            })
+        };
+
+        // Read the file as text
+        reader.readAsText(f);
+    }
+
+    const onDownloadCode = async ({ name, code, type }) => {
+        const blob = new Blob([code], { type });
+        // Create a URL for the Blob
+        const url = URL.createObjectURL(blob);
+
+        // Create an anchor element for the download
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute('href', url);
+        downloadAnchorNode.setAttribute('download', name); // Set the filename
+
+        // Append the link to the body (required for Firefox) and trigger the download
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+
+        // Clean up: remove the link and revoke the URL
+        document.body.removeChild(downloadAnchorNode);
+        URL.revokeObjectURL(url);
+    }
 
     const onRename = async () => {
         const name = await swal({
@@ -35,10 +129,10 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
             return notifications.show({
                 title: "Invalid Table Name",
                 message: "Please enter a valid table name",
-                color: "orange", position:"top-right",
+                color: "orange", position: "top-right",
                 icon: <MdWarning />
             })
-        } 
+        }
         setProjectName(name || projectName)
     }
 
@@ -47,13 +141,13 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
         const newProject = async () => {
             const name = await swal({
                 title: `New Project`,
-                text: `Enter the name of the new project`,
+                text: `Creating a new project will remove/replace your current project. You probably want to export ${projectName} first.`,
                 icon: "info",
-                buttons: ['Cancel', 'Rename'],
+                buttons: ['Cancel', 'Create New Project'],
                 content: {
                     element: "input",
                     attributes: {
-                        value: 'DataFrame',
+                        value: '',
                         placeholder: "Enter the name of the project e.g DataFrame",
 
                     }
@@ -65,15 +159,16 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                 return notifications.show({
                     title: "Invalid Project Name",
                     message: "Please enter a valid project name. ",
-                    color: "orange", position:"top-right",
+                    color: "orange", position: "top-right",
                     icon: <MdWarning />
                 })
-            } 
+            }
             setProjectName(name)
         }
 
         switch (value) {
             case "open":
+                setOpenDialogue(true);
                 break;
 
             case "new":
@@ -88,31 +183,11 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
             case "saveas":
                 break;
 
-            case "import-json":
-                break;
-
-            case "import-sql":
-                break;
-
-            case "import-drizzle":
-                break;
-
-            case "import-prisma":
-                break;
-
             case "share":
                 break;
 
-            case "export-json":
-                break;
-
-            case "export-sql":
-                break;
-
-            case "export-prisma":
-                break;
-
-            case "export-drizzle":
+            case "export":
+                setExportDialogue(true);
                 break;
 
             default: break;
@@ -122,6 +197,8 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
     const onView = (value) => {
         switch (value) {
             case 'fullscreen':
+                if (document.fullscreenElement) document.exitFullscreen();
+                else document.body.requestFullscreen();
                 break;
             case 'logs':
                 break;
@@ -177,38 +254,8 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                             <Menu.Label>{projectName}</Menu.Label>
                             <Menu.Item onClick={() => onFile('open')} rightSection={<span className='text-xs font-thin'>CTRL+O</span>}>Open</Menu.Item>
                             <Menu.Item onClick={() => onFile('new')} rightSection={<span className='text-xs font-thin'>CTRL+N</span>}>New</Menu.Item>
-
-                            <Menu.Divider />
-
                             <Menu.Item onClick={() => onFile('save')} rightSection={<span className='text-xs font-thin'>CTRL+S</span>}>Save</Menu.Item>
-                            {/* <Menu.Item onClick={() => onFile('saveas')} rightSection={<span className='text-xs font-thin'>CTRL+SHIFT+S</span>}>Save As</Menu.Item> */}
-                            {/* <Menu.Divider /> */}
-                            <Menu.Sub>
-                                <Menu.Sub.Target>
-                                    <Menu.Sub.Item>Import</Menu.Sub.Item>
-                                </Menu.Sub.Target>
-
-                                <Menu.Sub.Dropdown>
-                                    <Menu.Item onClick={() => onFile('import-json')} leftSection={<BsFiletypeJson size={16} />}>JSON (*.json)</Menu.Item>
-                                    <Menu.Item onClick={() => onFile('import-sql')} leftSection={<BsFiletypeSql size={16} />}>SQL (*.sql)</Menu.Item>
-                                    <Menu.Item onClick={() => onFile('import-prisma')} leftSection={<SiPrisma size={16} />}>Prisma Schema</Menu.Item>
-                                    <Menu.Item onClick={() => onFile('import-drizzle')} leftSection={<SiDrizzle size={16} />}>Drizzle Schema</Menu.Item>
-                                </Menu.Sub.Dropdown>
-                            </Menu.Sub>
-
-                            <Menu.Sub>
-                                <Menu.Sub.Target>
-                                    <Menu.Sub.Item>Export</Menu.Sub.Item>
-                                </Menu.Sub.Target>
-
-                                <Menu.Sub.Dropdown>
-                                    <Menu.Item onClick={() => onFile('export-json')} leftSection={<BsFiletypeJson size={16} />}>JSON (*.json)</Menu.Item>
-                                    <Menu.Item onClick={() => onFile('export-sql')} leftSection={<BsFiletypeSql size={16} />}>SQL (*.sql)</Menu.Item>
-                                    <Menu.Item onClick={() => onFile('export-prisma')} leftSection={<SiPrisma size={16} />}>Prisma Schema</Menu.Item>
-                                    <Menu.Item onClick={() => onFile('export-drizzle')} leftSection={<SiDrizzle size={16} />}>Drizzle Schema</Menu.Item>
-                                </Menu.Sub.Dropdown>
-                            </Menu.Sub>
-
+                            <Menu.Item onClick={() => onFile('export')} rightSection={<BsCode size={16} />}>Export</Menu.Item>
                             {/* <Menu.Item onClick={() => onFile('share')} rightSection={<Share2Icon size={16} />}>Share</Menu.Item> */}
                         </Menu.Dropdown>
                     </Menu>
@@ -269,6 +316,109 @@ function NavBar({ projectName, setProjectName, openDrawer, tables }) {
                 </div>
 
             </nav>
+
+
+            <Modal size="lg" opened={openDialogue} onClose={() => setOpenDialogue(false)} title="Open Project">
+                <div className='flex items-center w-full my-4'>
+                    <Input className='w-[80%]' placeholder="URL to file" type="url" />
+                    <Button>Load URL</Button>
+                </div>
+
+                <FileButton onChange={(f) => onOpen(f)} accept={ALLFORMATS.map(f => `.${f}, application/${f}, text/x-${f}, text/${f}`).join(',')}>
+                    {(props) => <Button {...props}>Browse Schema File</Button>}
+                </FileButton>
+
+                {/* <Dropzone
+                    onDrop={(files) => console.log('accepted files', files)}
+                    onReject={(files) => console.log('rejected files', files)}
+                    maxSize={5 * 1024 ** 2}
+                    accept={IMAGE_MIME_TYPE}
+                >
+                    <Group justify="center" gap="xl" mih={220} style={{ pointerEvents: 'none' }}>
+                        <Dropzone.Accept>
+                            <Upload size={52} color="var(--mantine-color-blue-6)" stroke={1.5} />
+                        </Dropzone.Accept>
+                        <Dropzone.Reject>
+                            <X size={52} color="var(--mantine-color-red-6)" stroke={1.5} />
+                        </Dropzone.Reject>
+                        <Dropzone.Idle>
+                            <File size={52} color="var(--mantine-color-dimmed)" stroke={1.5} />
+                        </Dropzone.Idle>
+
+                        <div>
+                            <Text size="xl" inline>
+                                Drag images here or click to select files
+                            </Text>
+                            <Text size="sm" c="dimmed" inline mt={7}>
+                                Attach as many files as you like, each file should not exceed 5mb
+                            </Text>
+                        </div>
+                    </Group>
+                </Dropzone> */}
+                <br />
+
+                <Alert variant="light" color="orange" title="Opening a new project" icon={<MdWarning />}>
+                    Opening a new project will remove/replace your current project. You probably want to export ${projectName} first.
+                </Alert>
+            </Modal>
+
+
+            <Modal size="lg" opened={exportDialogue} onClose={() => setExportDialogue(false)} title="Export Code">
+                <CodeHighlightTabs
+                    activeTab={activeCodeTab}
+                    onTabChange={tab => setActiveCodeTab(tab)}
+                    code={[
+                        { fileName: 'SQL', code: codeSQL, language: 'sql', icon: <BsFiletypeSql /> },
+                        { fileName: 'Prisma', code: codePrisma, language: 'prisma', icon: <SiPrisma /> },
+                        { fileName: 'Drizzle', code: codeDrizzle, language: 'javascript', icon: <SiDrizzle /> },
+                        { fileName: 'Mongo', code: codeMongoose, language: 'javascript', icon: <SiMongodb /> },
+                        { fileName: 'DataFrame', code: codeJSON, language: 'json', icon: <BsFiletypeJson /> },
+                    ]}
+                    controls={[
+                        <CodeHighlightControl
+                            component="button"
+                            onClick={() => onDownloadCode([
+                                {
+                                    name: `${projectName}.sql`,
+                                    code: codeSQL,
+                                    type: "application/sql;charset=utf-8"
+                                },
+                                {
+                                    name: "schema.prisma",
+                                    code: codePrisma,
+                                    type: "application/prisma;charset=utf-8"
+                                },
+                                {
+                                    name: "schema.ts",
+                                    code: codeDrizzle,
+                                    type: "application/ts;charset=utf-8"
+                                },
+                                {
+                                    name: `${projectName}.js`,
+                                    code: codeMongoose,
+                                    type: "application/js;charset=utf-8"
+                                },
+                                {
+                                    name: `${projectName}.df`,
+                                    code: codeJSON,
+                                    type: "application/json;charset=utf-8"
+                                }
+                            ][activeCodeTab])}
+                            tooltipLabel="Download Code as File"
+                            key="download"
+                        >
+                            <Download />
+                        </CodeHighlightControl>
+                    ]}
+                    copyLabel="Copy code"
+                    copiedLabel="Copied!"
+                    radius="lg"
+                    expanded={true}
+                    expandCodeLabel='Expanded'
+                    codeColorScheme='light'
+                    withBorder={true}
+                />
+            </Modal>
         </header>
     )
 }

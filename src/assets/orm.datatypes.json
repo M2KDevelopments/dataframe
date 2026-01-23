@@ -1,0 +1,26 @@
+{
+    "prisma": {
+        "text": "String",
+        "int": "Int",
+        "float": "Float",
+        "boolean": "Boolean"
+    },
+    "sql": {
+        "text": "TEXT",
+        "int": "INT",
+        "float": "REAL",
+        "boolean": "BOOLEAN"
+    },
+    "mongo": {
+        "text": "String",
+        "int": "Number",
+        "float": "Number",
+        "boolean": "Boolean"
+    },
+    "drizzle": {
+        "text": "text",
+        "int": "int",
+        "float": "float",
+        "boolean": "boolean"
+    }
+}

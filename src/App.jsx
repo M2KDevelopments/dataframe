@@ -14,6 +14,25 @@ import { useDisclosure } from '@mantine/hooks';
 import { notifications, Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/code-highlight/styles.css';
+import '@mantine/dropzone/styles.css';
+import { CodeHighlightAdapterProvider, createShikiAdapter } from '@mantine/code-highlight';
+
+
+// Shiki requires async code to load the highlighter
+async function loadShiki() {
+  const { createHighlighter } = await import('shiki');
+  const shiki = await createHighlighter({
+    langs: ['json', 'sql', 'prisma', 'javascript'],
+    // You can load supported themes here
+    themes: [],
+  });
+
+  return shiki;
+}
+
+const shikiAdapter = createShikiAdapter(loadShiki);
+
 
 // Drag and Drop Dnd Kit
 import { DndContext, DragOverlay } from '@dnd-kit/core';
@@ -856,324 +875,327 @@ function App() {
 
   return (
     <MantineProvider>
-      <Notifications />
+      <CodeHighlightAdapterProvider adapter={shikiAdapter}>
+        <Notifications />
 
-      <div className='w-full h-full'>
-        <NavBar projectName={projectName} setProjectName={setProjectName} openDrawer={open} tables={tables} />
+        <div className='w-full h-full'>
+          <NavBar projectName={projectName} setProjectName={setProjectName} openDrawer={open} tables={tables} />
 
-        <Drawer opened={opened} onClose={close} title={
-          <div className='grid grid-cols-2'>
-            {/* Adding Table */}
-            <Input error={invalidName(tablename)} id="tablefield" placeholder='Table Name' leftSection={<Table />} maxLength={100} value={tablename} onKeyDown={(e) => { if (e.key === 'Enter') onAddTable(tablename) }} onChange={e => setTablename(e.target.value)} />
-            <Button variant='filled' color='#104e64' leftSection={<Plus />} onClick={() => onAddTable(tablename)}>Add Table</Button>
-          </div>
-        }>
-          <div className='flex flex-col gap-3 h-[90vh]'>
+          <Drawer opened={opened} onClose={close} title={
+            <div className='grid grid-cols-2'>
+              {/* Adding Table */}
+              <Input error={invalidName(tablename)} id="tablefield" placeholder='Table Name' leftSection={<Table />} maxLength={100} value={tablename} onKeyDown={(e) => { if (e.key === 'Enter') onAddTable(tablename) }} onChange={e => setTablename(e.target.value)} />
+              <Button variant='filled' color='#104e64' leftSection={<Plus />} onClick={() => onAddTable(tablename)}>Add Table</Button>
+            </div>
+          }>
+            <div className='flex flex-col gap-3 h-[90vh]'>
 
-            {/* Search */}
-            <Input.Wrapper label="Search">
-              <Input placeholder='Search for Tables...' maxLength={100} leftSection={<SearchIcon />} radius={"md"} type='search' value={search} onChange={e => setSearch(e.target.value)} />
-            </Input.Wrapper>
+              {/* Search */}
+              <Input.Wrapper label="Search">
+                <Input placeholder='Search for Tables...' maxLength={100} leftSection={<SearchIcon />} radius={"md"} type='search' value={search} onChange={e => setSearch(e.target.value)} />
+              </Input.Wrapper>
 
-            {/* Multiple Select Options */}
-            {selectedFieldsSet.size > 0 ? <div className='flex gap-3'>
-              <Button variant='outline' color="dark" size="xs" radius="lg" onClick={() => setSelectedFieldsSet(new Set())}>Clear All</Button>
-              <Button variant='filled' color="dark" size="xs" radius="lg" leftSection={<Trash2 size={12} />} onClick={onRemoveMultipleFields}>Remove All</Button>
-            </div> : null}
+              {/* Multiple Select Options */}
+              {selectedFieldsSet.size > 0 ? <div className='flex gap-3'>
+                <Button variant='outline' color="dark" size="xs" radius="lg" onClick={() => setSelectedFieldsSet(new Set())}>Clear All</Button>
+                <Button variant='filled' color="dark" size="xs" radius="lg" leftSection={<Trash2 size={12} />} onClick={onRemoveMultipleFields}>Remove All</Button>
+              </div> : null}
 
-            {/* Tables */}
-            <div className='flex flex-col gap-2 overflow-y-scroll min-h-4/5 bg-slate-50 p-2 rounded-2xl border-slate-100'>
-              <Accordion chevronPosition="left" variant="contained" radius="md" defaultValue="">
-                {filteredTables.map((table) =>
-                  <Accordion.Item key={table.name} value={table.name}>
-                    <Accordion.Control>
-                      <div className='grid grid-cols-2'>
-                        <div className='w-full flex items-center gap-2'>
-                          <Badge color="teal" size='xs'>{table.fields.length.toString()}</Badge>
-                          {table.name}
-                        </div>
-                        <div className='w-full gap-2 flex justify-center items-center'>
-
-                          <Tooltip label="Table should have Timestamp?">
-                            <div className={`border ${table.timestamp ? 'border-teal-500' : 'border-gray-500'} rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onTableTimestamp(table.index)}>
-                              <Clock size={14} color={table.timestamp ? 'teal' : undefined} />
-                            </div>
-                          </Tooltip>
-
-                          <Tooltip label={`Rename Table`}>
-                            <div className={`border border-gray-500 rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onRenameTable(table.index)} >
-                              <Edit2 size={14} />
-                            </div>
-                          </Tooltip>
-
-                          <Tooltip label={`Remove ${table.name}`}>
-                            <div className={`border border-gray-500 rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onRemoveTable(table)} >
-                              <Trash2 size={14} />
-                            </div>
-                          </Tooltip>
-                        </div>
-                      </div>
-                    </Accordion.Control>
-                    <Accordion.Panel>
-                      <div className="flex gap-2 items-center">
-                        <div className="flex flex-col gap-2 w-full">
-                          <div className="flex gap-2  items-center">
-                            <Input error={invalidName(tablefield.name)} onKeyDown={(e) => { if (e.key === 'Enter') onAddField(table.index, tablefield) }} id={'fieldinput-' + table.index} placeholder='Field Name' value={tablefield.name} onChange={e => setTableField({ ...tablefield, name: e.target.value })} />
-                            <Select placeholder="Data Type" value={tablefield.type} onChange={(fieldtype) => setTableField({ ...tablefield, type: fieldtype })} data={FIELD_TYPES} />
-                            <ActionIcon onClick={() => onAddField(table.index, tablefield)} variant='filled' color='#104e64'><Plus /></ActionIcon>
+              {/* Tables */}
+              <div className='flex flex-col gap-2 overflow-y-scroll min-h-4/5 bg-slate-50 p-2 rounded-2xl border-slate-100'>
+                <Accordion chevronPosition="left" variant="contained" radius="md" defaultValue="">
+                  {filteredTables.map((table) =>
+                    <Accordion.Item key={table.name} value={table.name}>
+                      <Accordion.Control>
+                        <div className='grid grid-cols-2'>
+                          <div className='w-full flex items-center gap-2'>
+                            <Badge color="teal" size='xs'>{table.fields.length.toString()}</Badge>
+                            {table.name}
                           </div>
-                          <div className="flex gap-2 items-center">
+                          <div className='w-full gap-2 flex justify-center items-center'>
 
-                            <Tooltip label="Primary Key">
-                              <ActionIcon onClick={() => onPrimaryKey(table.index, tablefield)} disabled={tablefield.type == 'boolean'} variant={tablefield.primarykey ? 'filled' : 'outline'} size="sm" color='orange' radius="lg">
-                                <KeyRound size={12} />
-                              </ActionIcon>
+                            <Tooltip label="Table should have Timestamp?">
+                              <div className={`border ${table.timestamp ? 'border-teal-500' : 'border-gray-500'} rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onTableTimestamp(table.index)}>
+                                <Clock size={14} color={table.timestamp ? 'teal' : undefined} />
+                              </div>
                             </Tooltip>
-                            <Tooltip label="Foreign Key">
-                              <ActionIcon onClick={() => onForeignKeyField(table.index, tablefield)} disabled={tablefield.type == 'boolean'} variant={tablefield.foreignkey ? 'filled' : 'outline'} size="sm" color='indigo' radius="lg">
-                                <KeyRound size={12} />
-                              </ActionIcon>
+
+                            <Tooltip label={`Rename Table`}>
+                              <div className={`border border-gray-500 rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onRenameTable(table.index)} >
+                                <Edit2 size={14} />
+                              </div>
                             </Tooltip>
-                            <Tooltip label="Field should be unique">
-                              <ActionIcon onClick={() => setTableField({ ...tablefield, unique: !tablefield.unique })} disabled={tablefield.type == 'boolean'} variant={tablefield.unique ? 'filled' : 'outline'} size="sm" color='grape' radius="lg">
-                                <Sparkle size={12} />
-                              </ActionIcon>
+
+                            <Tooltip label={`Remove ${table.name}`}>
+                              <div className={`border border-gray-500 rounded-full p-1 shadow-2xs shadow-gray-400 hover:shadow-md duration-500`} onClick={() => onRemoveTable(table)} >
+                                <Trash2 size={14} />
+                              </div>
                             </Tooltip>
-                            <Tooltip label="Auto Increment">
-                              <ActionIcon onClick={() => setTableField({ ...tablefield, autoincrement: !tablefield.autoincrement })} disabled={tablefield.type == 'boolean'} variant={tablefield.autoincrement ? 'filled' : 'outline'} size="sm" color='pink' radius="lg">
-                                <ArrowDown01 size={12} />
-                              </ActionIcon>
-                            </Tooltip>
-                            <NumberInput allowDecimal={tablefield.type == 'float'} radius="lg" size="xs" disabled={tablefield.type == 'boolean'} placeholder='Min' value={tablefield.min} onChange={v => setTableField({ ...tablefield, min: v })} />
-                            <NumberInput allowDecimal={tablefield.type == 'float'} radius="lg" size="xs" disabled={tablefield.type == 'boolean'} placeholder='Max' value={tablefield.max} onChange={v => setTableField({ ...tablefield, max: v })} />
                           </div>
                         </div>
-                      </div>
+                      </Accordion.Control>
+                      <Accordion.Panel>
+                        <div className="flex gap-2 items-center">
+                          <div className="flex flex-col gap-2 w-full">
+                            <div className="flex gap-2  items-center">
+                              <Input error={invalidName(tablefield.name)} onKeyDown={(e) => { if (e.key === 'Enter') onAddField(table.index, tablefield) }} id={'fieldinput-' + table.index} placeholder='Field Name' value={tablefield.name} onChange={e => setTableField({ ...tablefield, name: e.target.value })} />
+                              <Select placeholder="Data Type" value={tablefield.type} onChange={(fieldtype) => setTableField({ ...tablefield, type: fieldtype })} data={FIELD_TYPES} />
+                              <ActionIcon onClick={() => onAddField(table.index, tablefield)} variant='filled' color='#104e64'><Plus /></ActionIcon>
+                            </div>
+                            <div className="flex gap-2 items-center">
+
+                              <Tooltip label="Primary Key">
+                                <ActionIcon onClick={() => onPrimaryKey(table.index, tablefield)} disabled={tablefield.type == 'boolean'} variant={tablefield.primarykey ? 'filled' : 'outline'} size="sm" color='orange' radius="lg">
+                                  <KeyRound size={12} />
+                                </ActionIcon>
+                              </Tooltip>
+                              <Tooltip label="Foreign Key">
+                                <ActionIcon onClick={() => onForeignKeyField(table.index, tablefield)} disabled={tablefield.type == 'boolean'} variant={tablefield.foreignkey ? 'filled' : 'outline'} size="sm" color='indigo' radius="lg">
+                                  <KeyRound size={12} />
+                                </ActionIcon>
+                              </Tooltip>
+                              <Tooltip label="Field should be unique">
+                                <ActionIcon onClick={() => setTableField({ ...tablefield, unique: !tablefield.unique })} disabled={tablefield.type == 'boolean'} variant={tablefield.unique ? 'filled' : 'outline'} size="sm" color='grape' radius="lg">
+                                  <Sparkle size={12} />
+                                </ActionIcon>
+                              </Tooltip>
+                              <Tooltip label="Auto Increment">
+                                <ActionIcon onClick={() => setTableField({ ...tablefield, autoincrement: !tablefield.autoincrement })} disabled={tablefield.type == 'boolean'} variant={tablefield.autoincrement ? 'filled' : 'outline'} size="sm" color='pink' radius="lg">
+                                  <ArrowDown01 size={12} />
+                                </ActionIcon>
+                              </Tooltip>
+                              <NumberInput allowDecimal={tablefield.type == 'float'} radius="lg" size="xs" disabled={tablefield.type == 'boolean'} placeholder='Min' value={tablefield.min} onChange={v => setTableField({ ...tablefield, min: v })} />
+                              <NumberInput allowDecimal={tablefield.type == 'float'} radius="lg" size="xs" disabled={tablefield.type == 'boolean'} placeholder='Max' value={tablefield.max} onChange={v => setTableField({ ...tablefield, max: v })} />
+                            </div>
+                          </div>
+                        </div>
 
 
-                      {/* All the fields */}
-                      <div className="my-3"></div>
-                      <Divider />
-                      <div className="my-3"></div>
+                        {/* All the fields */}
+                        <div className="my-3"></div>
+                        <Divider />
+                        <div className="my-3"></div>
 
 
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={rectIntersection}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={table.fields.map((f, i) => `${table.index}-${i}`)}
-                          strategy={verticalListSortingStrategy}
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={rectIntersection}
+                          onDragStart={handleDragStart}
+                          onDragEnd={handleDragEnd}
                         >
-                          {table.fields.map((field, fieldindex) =>
-                            <DataField
-                              key={`${table.index}-${fieldindex}`}
-                              dragId={`${table.index}-${fieldindex}`}
-                              field={field}
-                              dragOverlay={null}
-                              fieldindex={fieldindex}
-                              table={table}
-                              selectedFieldsSet={selectedFieldsSet}
-                              onSelectedField={onSelectedField}
-                              onEditField={() => setEditField({ ...field, index: fieldindex, tableindex: table.index })}
-                              onRemoveField={onRemoveField}
-                            />
-                          )}
-                        </SortableContext>
-                        <DragOverlay>
-                          {dragId ?
-                            <DataField
-                              dragOverlay={dragId != null}
-                              dragId={dragId}
-                              field={tables[dragId.split("-")[0]].fields[dragId.split("-")[1]]}
-                              fieldindex={dragId.split("-")[1]}
-                              table={table}
-                              selectedFieldsSet={new Set()}
-                              onSelectedField={() => null}
-                              onEditField={() => null}
-                              onRemoveField={() => null}
-                            />
-                            : null
-                          }
-                        </DragOverlay>
-                      </DndContext>
-                      {/* Show Time Stamps */}
-                      {table.timestamp ? ["createdAt", "updatedAt"].map((name, i) =>
-                        <DataField
-                          key={table.name + "timestamp" + i}
-                          field={{ name: name, type: "DateAndTime", foreignkey: "", primary: false, max: "", min: "", autoincrement: false }}
-                          isTimestamp={true}
-                          dragId={null}
-                          dragOverlay={null}
-                          fieldindex={-1}
-                          selectedFieldsSet={new Set()}
-                          table={table}
-                        />
-                      ) : null}
-                    </Accordion.Panel>
-                  </Accordion.Item>
-                )}
-              </Accordion>
-            </div>
-          </div>
-        </Drawer>
-
-        {/* Drawflow show tables */}
-        <main className='w-screen h-screen fixed top-0 left-0'>
-          <div id="drawflow" className='w-full h-full'></div>
-
-        </main>
-
-
-        {/* Modals */}
-        {
-          editField ?
-            <Modal opened={editField != null} onClose={() => setEditField(null)} title="Edit Field">
-              <div className="flex flex-col gap-3">
-                <div className="flex gap-2">
-                  <Input.Wrapper label="Field Name">
-                    <Input error={invalidName(editField.name)} placeholder='Field Name' label='Field Name' value={editField.name} onChange={e => setEditField({ ...editField, name: e.target.value })} />
-                  </Input.Wrapper>
-                  <Select placeholder="Data Type" label="Data Type" value={editField.type} onChange={(fieldtype) => setEditField({ ...editField, type: fieldtype })} data={FIELD_TYPES} />
-                </div>
-
-                <div className="flex gap-2 my-2">
-                  <NumberInput allowDecimal={editField.type == 'float'} label="Min" disabled={editField.type == 'boolean'} placeholder='Min' value={editField.min} onChange={v => setEditField({ ...editField, min: v })} />
-                  <NumberInput allowDecimal={editField.type == 'float'} label="Max" disabled={editField.type == 'boolean'} placeholder='Max' value={editField.max} onChange={v => setEditField({ ...editField, max: v })} />
-                </div>
-
-
-                <div className="flex gap-4 my-2">
-                  <Switch
-                    disabled={editField.type == 'boolean'}
-                    checked={editField.primarykey}
-                    onChange={(event) => setEditField({ ...editField, primarykey: event.currentTarget.checked })}
-                    color="orange"
-                    label="Primary Key"
-                    size="sm"
-                  />
-                  <Switch
-                    disabled={editField.type == 'boolean'}
-                    checked={editField.unique}
-                    onChange={(event) => setEditField({ ...editField, unique: event.currentTarget.checked })}
-                    color="grape"
-                    label="Unique"
-                    size="sm"
-                  />
-                  <Switch
-                    disabled={editField.type == 'boolean'}
-                    checked={editField.autoincrement}
-                    onChange={(event) => setEditField({ ...editField, autoincrement: event.currentTarget.checked })}
-                    color="pink"
-                    label="Auto Increment"
-                    size="sm"
-                  />
-                </div>
-
-                <Select
-                  placeholder="Foreign Key to Table"
-                  label="Foreign Key"
-                  description="Select the table to connect to"
-                  value={editField.foreignkey}
-                  onChange={(key) => setEditField({ ...editField, foreignkey: key })}
-                  data={foreignKeyOptions}
-                />
-
-                {tables[editField.tableindex].fields[editField.index].primarykey && !editField.primarykey ?
-                  <Alert variant="light" color="orange" title="Disabling Primary Key" icon={<MdWarning />}>
-                    Disabling the primary key will disconnect all the tables connected to this field
-                  </Alert>
-                  : null}
-
-                <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={onEditField}>Update Field</Button>
-
+                          <SortableContext
+                            items={table.fields.map((f, i) => `${table.index}-${i}`)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {table.fields.map((field, fieldindex) =>
+                              <DataField
+                                key={`${table.index}-${fieldindex}`}
+                                dragId={`${table.index}-${fieldindex}`}
+                                field={field}
+                                dragOverlay={null}
+                                fieldindex={fieldindex}
+                                table={table}
+                                selectedFieldsSet={selectedFieldsSet}
+                                onSelectedField={onSelectedField}
+                                onEditField={() => setEditField({ ...field, index: fieldindex, tableindex: table.index })}
+                                onRemoveField={onRemoveField}
+                              />
+                            )}
+                          </SortableContext>
+                          <DragOverlay>
+                            {dragId ?
+                              <DataField
+                                dragOverlay={dragId != null}
+                                dragId={dragId}
+                                field={tables[dragId.split("-")[0]].fields[dragId.split("-")[1]]}
+                                fieldindex={dragId.split("-")[1]}
+                                table={table}
+                                selectedFieldsSet={new Set()}
+                                onSelectedField={() => null}
+                                onEditField={() => null}
+                                onRemoveField={() => null}
+                              />
+                              : null
+                            }
+                          </DragOverlay>
+                        </DndContext>
+                        {/* Show Time Stamps */}
+                        {table.timestamp ? ["createdAt", "updatedAt"].map((name, i) =>
+                          <DataField
+                            key={table.name + "timestamp" + i}
+                            field={{ name: name, type: "DateAndTime", foreignkey: "", primary: false, max: "", min: "", autoincrement: false }}
+                            isTimestamp={true}
+                            dragId={null}
+                            dragOverlay={null}
+                            fieldindex={-1}
+                            selectedFieldsSet={new Set()}
+                            table={table}
+                          />
+                        ) : null}
+                      </Accordion.Panel>
+                    </Accordion.Item>
+                  )}
+                </Accordion>
               </div>
-            </Modal>
-            : null
-        }
-
-        {/* Select Table when choose foreign key for field */}
-        <Modal opened={tableListOfForeignKeys.length > 0} onClose={() => setForeignKeyOptions([])} title="Edit Field">
-          <div className="flex flex-col gap-3">
-            <Select
-              placeholder="Foreign Key to Table"
-              label="Foreign Key"
-              description="Select the table to connect to"
-              value={foreignkeySelected}
-              onChange={(key) => setForeignkeySelected(key)}
-              data={tableListOfForeignKeys}
-            />
-            <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={() => { setTableField({ ...tablefield, foreignkey: foreignkeySelected }); setForeignKeyOptions([]) }}>Set Foreign Key</Button>
-          </div>
-        </Modal>
-
-        {/* Select Table when choose foreign key for drawflow node connection */}
-        {nodeForeignKeyEditDialgoue ? <Modal opened={nodeForeignKeyEditDialgoue != null} onClose={() => { setNodeForeignKeyEditDialogue(null); setTables(prev => [...prev]) }} title="Choose Field to Connect to Table">
-          <div className="flex flex-col gap-3">
-            <Select
-              placeholder="Foreign Key to Table"
-              label="Foreign Key"
-              description="Select the table to connect to"
-              value={foreignkeySelected}
-              onChange={(key) => setForeignkeySelected(key)}
-              data={nodeForeignKeyEditDialgoue.fields.map(f => f.name)}
-            />
-            <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={() => {
-              setTables(prev => {
-                if (foreignkeySelected) {
-                  const { tableIndex, tableToConnect: tablename } = nodeForeignKeyEditDialgoue;
-                  const fields = prev[tableIndex].fields
-                  const fieldIndex = fields.findIndex(f => f.name == foreignkeySelected);
-                  prev[tableIndex].fields[fieldIndex].foreignkey = tablename;
-                }
-                return [...prev];
-              })
-              if (foreignkeySelected) {
-                notifications.show({
-                  title: "Tables connected",
-                  message: `Connected tables succesfully`,
-                  color: "green", position: "top-right",
-                  icon: <MdCheck />
-                });
-              }
-              setForeignkeySelected("");
-              setNodeForeignKeyEditDialogue(null);
-            }}>Set Foreign Key</Button>
-          </div>
-        </Modal> : null}
-
-
-        <footer className='w-full h-8 fixed bottom-0 left-0 bg-gray-700 flex flex-col p-2 justify-center items-start  z-10'>
-          <div className="flex w-full items-center">
-            <p className='text-xs text-white text-start px-4 w-full'>Data Frame</p>
-            <div className='flex gap-2 justify-end items-center w-full px-4'>
-              <Tooltip label="Zoom in">
-                <ActionIcon size={"sm"} radius={"lg"} color='white' variant='outline' onClick={() => drawflowEditor?.zoom_in()}>
-                  <ZoomInIcon size={15} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Zoom out">
-                <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_out()}>
-                  <ZoomOutIcon size={15} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Zoom reset">
-                <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_reset()}>
-                  <Maximize2Icon size={15} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Zoom refresh">
-                <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_refresh()}>
-                  <RefreshCw size={15} />
-                </ActionIcon>
-              </Tooltip>
             </div>
-          </div>
-        </footer>
+          </Drawer>
 
-      </div >
+          {/* Drawflow show tables */}
+          <main className='w-screen h-screen fixed top-0 left-0'>
+            <div id="drawflow" className='w-full h-full'></div>
+
+          </main>
+
+
+          {/* Modals */}
+          {
+            editField ?
+              <Modal opened={editField != null} onClose={() => setEditField(null)} title="Edit Field">
+                <div className="flex flex-col gap-3">
+                  <div className="flex gap-2">
+                    <Input.Wrapper label="Field Name">
+                      <Input error={invalidName(editField.name)} placeholder='Field Name' label='Field Name' value={editField.name} onChange={e => setEditField({ ...editField, name: e.target.value })} />
+                    </Input.Wrapper>
+                    <Select placeholder="Data Type" label="Data Type" value={editField.type} onChange={(fieldtype) => setEditField({ ...editField, type: fieldtype })} data={FIELD_TYPES} />
+                  </div>
+
+                  <div className="flex gap-2 my-2">
+                    <NumberInput allowDecimal={editField.type == 'float'} label="Min" disabled={editField.type == 'boolean'} placeholder='Min' value={editField.min} onChange={v => setEditField({ ...editField, min: v })} />
+                    <NumberInput allowDecimal={editField.type == 'float'} label="Max" disabled={editField.type == 'boolean'} placeholder='Max' value={editField.max} onChange={v => setEditField({ ...editField, max: v })} />
+                  </div>
+
+
+                  <div className="flex gap-4 my-2">
+                    <Switch
+                      disabled={editField.type == 'boolean'}
+                      checked={editField.primarykey}
+                      onChange={(event) => setEditField({ ...editField, primarykey: event.currentTarget.checked })}
+                      color="orange"
+                      label="Primary Key"
+                      size="sm"
+                    />
+                    <Switch
+                      disabled={editField.type == 'boolean'}
+                      checked={editField.unique}
+                      onChange={(event) => setEditField({ ...editField, unique: event.currentTarget.checked })}
+                      color="grape"
+                      label="Unique"
+                      size="sm"
+                    />
+                    <Switch
+                      disabled={editField.type == 'boolean'}
+                      checked={editField.autoincrement}
+                      onChange={(event) => setEditField({ ...editField, autoincrement: event.currentTarget.checked })}
+                      color="pink"
+                      label="Auto Increment"
+                      size="sm"
+                    />
+                  </div>
+
+                  <Select
+                    placeholder="Foreign Key to Table"
+                    label="Foreign Key"
+                    description="Select the table to connect to"
+                    value={editField.foreignkey}
+                    onChange={(key) => setEditField({ ...editField, foreignkey: key })}
+                    data={foreignKeyOptions}
+                  />
+
+                  {tables[editField.tableindex].fields[editField.index].primarykey && !editField.primarykey ?
+                    <Alert variant="light" color="orange" title="Disabling Primary Key" icon={<MdWarning />}>
+                      Disabling the primary key will disconnect all the tables connected to this field
+                    </Alert>
+                    : null}
+
+                  <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={onEditField}>Update Field</Button>
+
+                </div>
+              </Modal>
+              : null
+          }
+
+          {/* Select Table when choose foreign key for field */}
+          <Modal opened={tableListOfForeignKeys.length > 0} onClose={() => setForeignKeyOptions([])} title="Edit Field">
+            <div className="flex flex-col gap-3">
+              <Select
+                placeholder="Foreign Key to Table"
+                label="Foreign Key"
+                description="Select the table to connect to"
+                value={foreignkeySelected}
+                onChange={(key) => setForeignkeySelected(key)}
+                data={tableListOfForeignKeys}
+              />
+              <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={() => { setTableField({ ...tablefield, foreignkey: foreignkeySelected }); setForeignKeyOptions([]) }}>Set Foreign Key</Button>
+            </div>
+          </Modal>
+
+          {/* Select Table when choose foreign key for drawflow node connection */}
+          {nodeForeignKeyEditDialgoue ? <Modal opened={nodeForeignKeyEditDialgoue != null} onClose={() => { setNodeForeignKeyEditDialogue(null); setTables(prev => [...prev]) }} title="Choose Field to Connect to Table">
+            <div className="flex flex-col gap-3">
+              <Select
+                placeholder="Foreign Key to Table"
+                label="Foreign Key"
+                description="Select the table to connect to"
+                value={foreignkeySelected}
+                onChange={(key) => setForeignkeySelected(key)}
+                data={nodeForeignKeyEditDialgoue.fields.map(f => f.name)}
+              />
+              <Button variant="filled" color="teal" leftSection={<EditIcon />} onClick={() => {
+                setTables(prev => {
+                  if (foreignkeySelected) {
+                    const { tableIndex, tableToConnect: tablename } = nodeForeignKeyEditDialgoue;
+                    const fields = prev[tableIndex].fields
+                    const fieldIndex = fields.findIndex(f => f.name == foreignkeySelected);
+                    prev[tableIndex].fields[fieldIndex].foreignkey = tablename;
+                  }
+                  return [...prev];
+                })
+                if (foreignkeySelected) {
+                  notifications.show({
+                    title: "Tables connected",
+                    message: `Connected tables succesfully`,
+                    color: "green", position: "top-right",
+                    icon: <MdCheck />
+                  });
+                }
+                setForeignkeySelected("");
+                setNodeForeignKeyEditDialogue(null);
+              }}>Set Foreign Key</Button>
+            </div>
+          </Modal> : null}
+
+
+          <footer className='w-full h-8 fixed bottom-0 left-0 bg-gray-700 flex flex-col p-2 justify-center items-start  z-10'>
+            <div className="flex w-full items-center">
+              <p className='text-xs text-white text-start px-4 w-full'>Data Frame</p>
+              <div className='flex gap-2 justify-end items-center w-full px-4'>
+                <Tooltip label="Zoom in">
+                  <ActionIcon size={"sm"} radius={"lg"} color='white' variant='outline' onClick={() => drawflowEditor?.zoom_in()}>
+                    <ZoomInIcon size={15} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Zoom out">
+                  <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_out()}>
+                    <ZoomOutIcon size={15} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Zoom reset">
+                  <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_reset()}>
+                    <Maximize2Icon size={15} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label="Zoom refresh">
+                  <ActionIcon size={"sm"} radius="lg" color='white' variant='outline' onClick={() => drawflowEditor?.zoom_refresh()}>
+                    <RefreshCw size={15} />
+                  </ActionIcon>
+                </Tooltip>
+              </div>
+            </div>
+          </footer>
+
+        </div >
+
+      </CodeHighlightAdapterProvider>
     </MantineProvider >
   )
 }
