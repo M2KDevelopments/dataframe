@@ -1,7 +1,7 @@
 {
   "name": "DataFrame: Visualize your database",
   "short_name": "DataFrame: Visualize your database",
-  "version": "1.0.0.0",
+  "version": "1.0.0.1",
   "description": "Visualize database tables and export code to relational databases or ORMs with this free, open-source tool.",
   "manifest_version": 3,
   "minimum_chrome_version": "88",

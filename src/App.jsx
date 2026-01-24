@@ -288,6 +288,18 @@ function App() {
           }
         }
       }
+
+      // add on open/close accordion
+      for (const i in tables) {
+        const details = document.getElementById(`table-${tables[i].name}`);
+
+        details.ontoggle = () => {
+          if (tables[i].opened != details.open) {
+            setTables(prev => { prev[i].opened = details.open; return [...prev] })
+          }
+        };
+
+      }
     }
   }, [tables, drawflowEditor])
 
@@ -1183,7 +1195,7 @@ function App() {
 
             <FirstTime />
 
-            
+
             <footer className='w-full h-8 fixed bottom-0 left-0 bg-gray-700 flex flex-col p-2 justify-center items-start  z-10'>
               <div className="flex w-full items-center">
                 <p className='text-xs text-white text-start px-4 w-full'>Data Frame</p>
