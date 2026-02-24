@@ -1,6 +1,6 @@
 import swal from 'sweetalert';
 import { ActionIcon, Button, Input, Menu, Modal, Tooltip, Alert } from '@mantine/core';
-import { Download, HelpCircleIcon, PanelRight, Upload, X } from 'lucide-react';
+import { Download, HelpCircleIcon, PanelRight, Upload, X, Chromium } from 'lucide-react';
 import { FaGithub, FaMoneyBillWave, FaPaypal, FaSave } from 'react-icons/fa';
 import { BsCode, BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
 import { SiBuymeacoffee, SiDrizzle, SiMongodb, SiPrisma } from 'react-icons/si';
@@ -521,6 +521,14 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                             <FaPaypal size={18} />
                         </ActionIcon>
                     </Tooltip>
+
+                    <Tooltip label="Download From Chrome Webstore">
+                        <ActionIcon variant="subtle" radius="lg" size="md" color='white' onClick={() => window.open('https://chromewebstore.google.com/detail/dataframe-visualize-your/aielkbgkdckfdpkppagaagbhialpkiok?authuser=0&hl=en', '_blank')}>
+                            <Chromium size={18} />
+                        </ActionIcon>
+                    </Tooltip>
+
+                    
                 </div>
 
             </nav>
