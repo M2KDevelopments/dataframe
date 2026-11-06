@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTour } from '@reactour/tour'
+import { useTour, type StepType } from '@reactour/tour'
 import tourguide from '../assets/tour.json';
 import { Button, Modal } from '@mantine/core';
 import { HelpCircle } from 'lucide-react';
@@ -18,7 +18,7 @@ function FirstTime() {
 
     const onTour = () => {
         setIsOpen(true);
-        setSteps(tourguide);
+        setSteps(tourguide as StepType[]);
         onClose();
     }
 

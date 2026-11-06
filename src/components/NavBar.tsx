@@ -1,7 +1,7 @@
 import swal from 'sweetalert';
 import { ActionIcon, Button, Input, Menu, Modal, Tooltip, Alert } from '@mantine/core';
-import { Download, HelpCircleIcon, PanelRight, Upload, X, Chromium } from 'lucide-react';
-import { FaGithub, FaMoneyBillWave, FaPaypal, FaSave } from 'react-icons/fa';
+import { Download, HelpCircleIcon, PanelRight, Upload, X } from 'lucide-react';
+import { FaGithub, FaMoneyBillWave, FaPaypal, FaChrome } from 'react-icons/fa';
 import { BsCode, BsFiletypeJson, BsFiletypeSql } from 'react-icons/bs';
 import { SiBuymeacoffee, SiDrizzle, SiMongodb, SiPrisma } from 'react-icons/si';
 import { notifications } from '@mantine/notifications';
@@ -18,7 +18,7 @@ import { Dropzone } from '@mantine/dropzone';
 import ALLFORMATS from '../assets/codetypes.json';
 import { getDrizzleFrom, getMongoose, getPrismaFrom, getSQLFrom } from '../helpers/transpiler';
 import { parseDataFrameFile } from '../helpers/parser';
-import { useTour } from '@reactour/tour';
+import { useTour, type StepType } from '@reactour/tour';
 import tourguide from '../assets/tour.json';
 
 const width = 200;
@@ -56,7 +56,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
             console.error("Error reading file: ", e.target.error);
             notifications.show({
                 title: "Uploading Error",
-                message: e.target.error,
+                message: e.target.error.message,
                 color: "orange",
                 position: "top-right",
                 icon: <MdWarning />
@@ -69,7 +69,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
     })
 
     /**
-     * @param {File | null} f 
+     * @param {File | null} f
      */
     const onOpen = async (f) => {
         if (!f) return;
@@ -85,7 +85,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
             })
         }
         const content = await readFile(f);
-        const tablelist = parseDataFrameFile(content);
+        const tablelist = parseDataFrameFile(content as string);
         if (!tablelist) {
             return notifications.show({
                 title: "Uploading Error",
@@ -125,7 +125,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
         const extratables = [];
         for (const f of allowedFiles) {
             const content = await readFile(f);
-            const tablelist = parseDataFrameFile(content);
+            const tablelist = parseDataFrameFile(content as string);
             if (!tablelist) {
                 return notifications.show({
                     title: "Uploading Error",
@@ -422,7 +422,7 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
                 break;
             case "tour":
                 setCurrentStep(0);
-                setSteps(tourguide)
+                setSteps(tourguide as StepType[])
                 setIsOpen(true);
                 break;
             case "terms":
@@ -524,11 +524,11 @@ function NavBar({ projectName, setProjectName, openDrawer, tables, setTables }) 
 
                     <Tooltip label="Download From Chrome Webstore">
                         <ActionIcon variant="subtle" radius="lg" size="md" color='white' onClick={() => window.open('https://chromewebstore.google.com/detail/dataframe-visualize-your/aielkbgkdckfdpkppagaagbhialpkiok?authuser=0&hl=en', '_blank')}>
-                            <Chromium size={18} />
+                            <FaChrome size={18} />
                         </ActionIcon>
                     </Tooltip>
 
-                    
+
                 </div>
 
             </nav>
