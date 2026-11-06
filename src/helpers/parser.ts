@@ -1,4 +1,4 @@
-export function fileDetector(text) {
+export function fileDetector(text: string) {
     if (text.includes(`mongoose`) && (text.includes(`require`) || text.includes(`import`))) {
         return "mongo";
     } else if (text.includes("drizzle-orm") && (text.includes(`require`) || text.includes(`import`))) {
@@ -18,7 +18,7 @@ export function fileDetector(text) {
     }
 }
 
-export function parseDataFrameFile(text) {
+export function parseDataFrameFile(text: string) {
     try {
         const json = JSON.parse(text);
         if (!Array.isArray(json)) return null

@@ -66,7 +66,7 @@ const sqlKeywords = [
 ]
 
 
-export function getSQLFrom(tables) {
+export function getSQLFrom(tables = []) {
     const map = new Map();
     for (const t of tables) map.set(t.name, t);
     return tables.map(table => {
@@ -77,9 +77,9 @@ export function getSQLFrom(tables) {
                 let fieldname = field.name;
                 let attributes = "";
                 if (sqlKeywords.includes(fieldname.toUpperCase())) fieldname = `\`${fieldname}\``;
-                if (field.primarykey) attributes + " PRIMARY KEY";
-                if (field.unique) attributes + " UNIQUE NOT NULL";
-                if (field.autoincrement) attributes + " AUTO_INCREMENT";
+                if (field.primarykey) attributes += " PRIMARY KEY";
+                if (field.unique) attributes += " UNIQUE NOT NULL";
+                if (field.autoincrement) attributes += " AUTO_INCREMENT";
                 if (field.foreignkey) {
                     const primaryTable = map.get(field.foreignkey)
                     const primaryKey = primaryTable ? primaryTable.fields.find(f => f.primarykey) : "";
@@ -97,7 +97,7 @@ export function getSQLFrom(tables) {
     }).join("\n\n");
 }
 
-export function getPrismaFrom(tables) {
+export function getPrismaFrom(tables = []) {
     const map = new Map();
     for (const t of tables) map.set(t.name, t);
     return tables.map(table => {
@@ -106,9 +106,9 @@ export function getPrismaFrom(tables) {
             .map(field => {
                 let fieldname = field.name;
                 let attributes = "";
-                if (field.primarykey) attributes + " @id";
-                if (field.unique) attributes + " @unique";
-                if (field.autoincrement) attributes + " @default(autoincrement())";
+                if (field.primarykey) attributes += " @id";
+                if (field.unique) attributes += " @unique";
+                if (field.autoincrement) attributes += " @default(autoincrement())";
 
                 // e.g  taggedContact Contact  @relation(fields: [contact], references: [id])
                 if (field.foreignkey) {
@@ -130,7 +130,7 @@ export function getPrismaFrom(tables) {
     }).join("\n\n");
 }
 
-export function getDrizzleFrom(tables) {
+export function getDrizzleFrom(tables = []) {
     return `import { integer, pgTable, text } from "drizzle-orm/pg-core";\n` +
         `import { sql } from "drizzle-orm";\n\n` +
         tables.map(table => {
@@ -138,9 +138,9 @@ export function getDrizzleFrom(tables) {
                 .map(field => {
                     let fieldname = field.name;
                     let attributes = "";
-                    if (field.primarykey) attributes + ".primaryKey()";
-                    if (field.unique) attributes + ".unique().notNull()";
-                    if (field.autoincrement) attributes + ".autoincrement()";
+                    if (field.primarykey) attributes += ".primaryKey()";
+                    if (field.unique) attributes += ".unique().notNull()";
+                    if (field.autoincrement) attributes += ".autoincrement()";
                     return `\t${fieldname}: ${ORM_DATA_TYPES.drizzle[field.type]}("${fieldname}")${attributes},`
                 })
                 .join(`\n`)}
@@ -151,7 +151,7 @@ export function getDrizzleFrom(tables) {
         }).join("\n\n");
 }
 
-export function getMongoose(tables) {
+export function getMongoose(tables = []) {
     return `const mongoose = require('mongoose');\n` +
         `const Schema = mongoose.Schema;\n` +
         `` +
@@ -160,9 +160,9 @@ export function getMongoose(tables) {
                 .map(field => {
                     let fieldname = field.name;
                     let attributes = "";
-                    if (field.primarykey) attributes + ".primaryKey()";
-                    if (field.unique) attributes + ".unique().notNull()";
-                    if (field.autoincrement) attributes + ".autoincrement()";
+                    if (field.primarykey) attributes += ".primaryKey()";
+                    if (field.unique) attributes += ".unique().notNull()";
+                    if (field.autoincrement) attributes += ".autoincrement()";
                     return `\t${fieldname}: {` +
                         (`\n\t\t` + `type: ${ORM_DATA_TYPES.mongo[field.type]},`) +
                         (`${field.min ? `\n\t\tmin: ${field.min},` : ""}`) +
